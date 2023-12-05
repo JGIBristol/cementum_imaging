@@ -1,0 +1,12 @@
+name: tf2
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.9
+  - tensorflow-gpu
+  - keras
+  - matplotlib
+  - scikit-learn
+  - ipykernel
+  - cudatoolkit
