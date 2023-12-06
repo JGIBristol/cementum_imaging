@@ -1,14 +1,16 @@
 name: tf2
 channels:
-  - defaults
   - conda-forge
+  - defaults
 dependencies:
   - python=3.9
-  - tensorflow-gpu
+  - pip==23.3.1
   - keras
   - matplotlib
   - scikit-learn
   - ipykernel
-  - cudatoolkit
+  # - cudatoolkit
   - nbdime
   - black
+  - pip:
+    - tensorflow-cpu==2.14.0
