@@ -2,9 +2,13 @@
 Image processing
 
 """
-from PIL import Image
+import warnings
 
+from PIL import Image
 import numpy as np
+from keras.utils import to_categorical
+
+from . import util
 
 
 def resize(image: Image, size: tuple[int, int]) -> np.ndarray:
@@ -75,3 +79,69 @@ def rotate_and_flip(
             rotated_masks[i] = np.flip(rotated_masks[i], axis=1)
 
     return rotated_images, rotated_masks
+
+
+def _normalise_images(images: np.ndarray) -> np.ndarray:
+    """
+    Normalise an image or collection of images from 0-255 to 0-1
+
+    """
+    if np.issubdtype(images.dtype, np.integer):
+        images = images / 255.0
+    else:
+        warnings.warn(
+            f"{util.bcolours.WARNING}Image is not of integer type: {images.dtype}"
+        )
+
+    return images
+
+
+def _add_axis(images: np.ndarray) -> np.ndarray:
+    """
+    Add an axis to an image or collection of images
+
+    """
+    return images[..., np.newaxis]
+
+
+def masks2matrix(masks: np.ndarray, n_classes: int) -> np.ndarray:
+    """
+    Convert an array of masks (as numpy arrays) to a categorical class matrix.
+
+    :param masks: The masks to convert
+    :param n_classes: The number of classes in the masks (probably 3 for the segmentation task)
+    :returns: an array representing the masks, suitable for e.g. training the model
+
+    """
+    original_shape = masks.shape
+
+    # Flatten into one column
+    masks = masks.reshape(-1, 1).ravel()
+
+    masks = _add_axis(masks)
+
+    # Convert to categorical
+    cat_masks = to_categorical(masks, num_classes=n_classes)
+
+    return cat_masks.reshape(*original_shape, n_classes)
+
+
+def imgs2array(imgs: np.ndarray) -> np.ndarray:
+    """
+    Convert an array of images (as numpy arrays) to a flattened array,
+    intensities between 0 and 1, with the right number of channels for
+    the model.
+
+    Assumes the images are already the right size for the model,
+    and that intensities are 0-255.
+
+    :param img: The images to convert
+    :returns: an array representing the images, suitable for e.g. training the model
+
+    """
+    imgs = _normalise_images(imgs)
+
+    # Add another dimension
+    # This is required because the model expects images to have shape (batch_size, height, width, n_channels)
+    # n_channels = 1 here, becuase the images are greyscale
+    return _add_axis(imgs)

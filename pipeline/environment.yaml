@@ -10,3 +10,5 @@ dependencies:
   - scikit-learn
   - ipykernel
   - cudatoolkit
+  - nbdime
+  - black
