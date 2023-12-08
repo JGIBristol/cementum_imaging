@@ -73,7 +73,20 @@ def _correct_jumps(edge: np.ndarray, threshold: int) -> np.ndarray:
     return np.stack((smoothed_x, edge[:, 1]), axis=-1)
 
 
-def fit_edges(edges: np.ndarray) -> np.ndarray:
+def _fit_polynomial(edge: np.ndarray, degree: int) -> np.ndarray:
+    """
+    Fit a polynomial to the provided edge
+    This will be parameterised as x = f(y), since the edge is vertical
+
+    """
+    return np.polynomial.Polynomial.fit(
+        edge[:, 1], edge[:, 0], degree, domain=(0, len(edge))
+    )
+
+
+def fit_edges(
+    edges: np.ndarray, *, jump_threshold: int = 10, fit_degree=6
+) -> np.ndarray:
     """
     Given an array representing edge locations,
 
@@ -84,7 +97,12 @@ def fit_edges(edges: np.ndarray) -> np.ndarray:
     first_edge, last_edge = _identify_edges(edges)
 
     # Correct for any large jumps in the x-coordinate
+    smoothed_first_edge = _correct_jumps(first_edge, jump_threshold)
+    smoothed_last_edge = _correct_jumps(last_edge, jump_threshold)
 
     # Fit polynomials to the edges
+    first_coefs = _fit_polynomial(smoothed_first_edge, fit_degree)
+    last_coefs = _fit_polynomial(smoothed_last_edge, fit_degree)
 
     # Return these polynomials
+    return first_coefs, last_coefs
