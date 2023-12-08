@@ -32,7 +32,7 @@ def _identify_edges(edges: np.ndarray) -> np.ndarray:
     return a tuple of arrays representing both edgse
 
     """
-    y_coords, x_coords = np.where(edges)
+    y_coords, x_coords = edges.nonzero()
     unique_y_coords = np.unique(y_coords)
 
     # Find the co-ordinates of the two edges
@@ -54,9 +54,23 @@ def _identify_edges(edges: np.ndarray) -> np.ndarray:
     first_edge_x = np.array(first_edge_x)
     last_edge_x = np.array(last_edge_x)
 
-    return np.stack((unique_y_coords, first_edge_x), axis=-1), np.stack(
-        (unique_y_coords, last_edge_x), axis=-1
+    return np.stack((first_edge_x, unique_y_coords), axis=-1), np.stack(
+        (last_edge_x, unique_y_coords), axis=-1
     )
+
+
+def _correct_jumps(edge: np.ndarray, threshold: int) -> np.ndarray:
+    """
+    Given arrays representing edge locations, find where the x-coordinate jumps by a large amount
+    and smooth it
+
+    """
+    smoothed_x = edge[:, 0].copy()
+    # Find the locations where the x-coordinate jumps by a large amount
+    for location in (np.diff(smoothed_x) > threshold).nonzero()[0]:
+        smoothed_x[location + 1] = smoothed_x[location]
+
+    return np.stack((smoothed_x, edge[:, 1]), axis=-1)
 
 
 def fit_edges(edges: np.ndarray) -> np.ndarray:
