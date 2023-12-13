@@ -3,6 +3,7 @@ Functions and helpers for straightening the images
 
 """
 import numpy as np
+from scipy.spatial import distance
 from PIL import ImageFilter, Image
 
 
@@ -106,3 +107,23 @@ def fit_edges(
 
     # Return these polynomials
     return first_coefs, last_coefs
+
+
+def extendline(
+    line: tuple[tuple[float, float], tuple[float, float]], extra_length: float
+) -> tuple[float, float]:
+    """
+    Extend a line segment by the given length in the direction from start to end
+
+    :param line: two points; each being two co-ordinates (x, y)
+    :param extra_length: the length to extend the line by
+
+    :returns: the new end point of the line
+    """
+    start, end = line
+    line_length = distance.euclidean(start, end)
+
+    new_end_x = end[0] + ((end[0] - start[0]) / line_length * extra_length)
+    new_end_y = end[1] + ((end[1] - end[1]) / line_length * extra_length)
+
+    return (new_end_x, new_end_y)
