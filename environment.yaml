@@ -8,7 +8,9 @@ dependencies:
   - keras
   - matplotlib
   - scikit-learn
+  - scikit-image
   - ipykernel
+  - opencv
   # - cudatoolkit
   - nbdime
   - black
