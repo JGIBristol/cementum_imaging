@@ -5,8 +5,10 @@ Functions and helpers for straightening the images
 import numpy as np
 import cv2
 from scipy.spatial import distance
+from scipy.interpolate import interp1d
 from PIL import ImageFilter, Image
 from skimage.morphology import skeletonize
+from sklearn.decomposition import PCA
 
 
 def find_edges(image: np.ndarray) -> np.ndarray:
@@ -111,10 +113,50 @@ def fit_edges(
     return first_coefs, last_coefs
 
 
-def _xy_clean(
-    x_coords: np.ndarray, y_coords: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
-    """ """
+def _xy_clean(x_coords: np.ndarray, y_coords: np.ndarray) -> np.ndarray:
+    """
+    Clean and smooth by interpolating a set of x and y coordinates
+
+    :param x: The x coordinates to be cleaned.
+    :param y: The y coordinates to be cleaned.
+
+    :returns: The cleaned coordinates.
+    """
+    # Combine the x and y coordinates into a single array
+    coordinates = np.concatenate(
+        (x_coords.reshape(-1, 1), y_coords.reshape(-1, 1)), axis=1
+    )
+
+    # Perform PCA on the coordinates
+    pca = PCA(2)
+    pca.fit(coordinates)
+    coordinates_pca = pca.transform(coordinates)
+
+    # Sort the coordinates by the x values
+    sorted_indices = np.argsort(coordinates_pca[:, 0])
+    sorted_coordinates = coordinates_pca[sorted_indices]
+
+    # Interpolate more points
+    interpolation = interp1d(
+        sorted_coordinates[:, 0], sorted_coordinates[:, 1], kind="linear"
+    )
+    new_x = np.linspace(
+        np.min(sorted_coordinates[:, 0]), np.max(sorted_coordinates[:, 0]), 100
+    )
+    new_y = interpolation(new_x)
+
+    # Transform back to the original coordinate space
+    cleaned_coordinates = pca.inverse_transform(
+        np.concatenate((new_x.reshape(-1, 1), new_y.reshape(-1, 1)), axis=1)
+    )
+
+    # Return the cleaned coordinates as an integer array
+    return np.hstack(
+        (
+            cleaned_coordinates[:, 0].reshape(-1, 1),
+            cleaned_coordinates[:, 1].reshape(-1, 1),
+        )
+    ).astype(int)
 
 
 def contour2skeleton(contour: np.ndarray) -> np.ndarray:
