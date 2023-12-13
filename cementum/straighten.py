@@ -3,8 +3,10 @@ Functions and helpers for straightening the images
 
 """
 import numpy as np
+import cv2
 from scipy.spatial import distance
 from PIL import ImageFilter, Image
+from skimage.morphology import skeletonize
 
 
 def find_edges(image: np.ndarray) -> np.ndarray:
@@ -107,6 +109,58 @@ def fit_edges(
 
     # Return these polynomials
     return first_coefs, last_coefs
+
+
+def _xy_clean(
+    x_coords: np.ndarray, y_coords: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
+    """ """
+
+
+def contour2skeleton(contour: np.ndarray) -> np.ndarray:
+    """
+    Convert a contour to a skeleton
+
+    :param contour: contour to convert
+    :returns: skeleton of the contour
+
+    """
+    # Calculate the bounding rectangle of the contour
+    x, y, width, height = cv2.boundingRect(contour)
+
+    # Translate the contour to the origin
+    contour_translated = contour - [x, y]
+
+    # Create a blank binary image of the same size as the bounding rectangle
+    binary_image = np.zeros((height, width))
+
+    # Draw the translated contour onto the blank image and normalize it
+    binary_image = (
+        cv2.drawContours(
+            binary_image, [contour_translated], -1, color=255, thickness=cv2.FILLED
+        )
+        // 255
+    )
+
+    # Reduce the shape in the image to a single-pixel wide skeleton
+    skeleton = skeletonize(binary_image > 0)
+
+    # Find the coordinates of the non-zero pixels in the skeleton image
+    skeleton_coordinates = np.argwhere(skeleton > 0)
+
+    # Flip the coordinates to (x, y) order
+    skeleton_coordinates = np.flip(skeleton_coordinates, axis=None)
+
+    # Separate the x and y coordinates into two separate arrays
+    x_coords, y_coords = skeleton_coordinates[:, 0], skeleton_coordinates[:, 1]
+
+    # Clean the x and y coordinates
+    cleaned_skeleton = _xy_clean(x_coords, y_coords)
+
+    # Translate the skeleton back to its original position
+    cleaned_skeleton = cleaned_skeleton + [x, y]
+
+    return cleaned_skeleton
 
 
 def extendline(
