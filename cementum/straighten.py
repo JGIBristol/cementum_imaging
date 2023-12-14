@@ -4,6 +4,7 @@ Functions and helpers for straightening the images
 """
 import numpy as np
 import cv2
+import shapely
 from scipy.spatial import distance
 from scipy.interpolate import interp1d
 from PIL import ImageFilter, Image
@@ -167,6 +168,8 @@ def contour2skeleton(contour: np.ndarray) -> np.ndarray:
     :returns: skeleton of the contour
 
     """
+    raise NotImplementedError("I don't really know what this is meant to do")
+
     # Calculate the bounding rectangle of the contour
     x, y, width, height = cv2.boundingRect(contour)
 
@@ -203,6 +206,21 @@ def contour2skeleton(contour: np.ndarray) -> np.ndarray:
     cleaned_skeleton = cleaned_skeleton + [x, y]
 
     return cleaned_skeleton
+
+
+def simplify(curve: np.ndarray, tolerance: float) -> np.ndarray:
+    """
+    Simplify a curve - remove points that don't add much useful information about the shape of the curve
+
+    :param curve: curve to simplify, (N, 2) array of points
+    :param tolerance: the simplified line will be no further than this distance from the original
+
+    :returns: simplified curve as an (M, 2) array of points
+
+    """
+    x, y = shapely.LineString(curve).simplify(tolerance=tolerance).xy
+
+    return np.column_stack((x, y))
 
 
 def extendline(
