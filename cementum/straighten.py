@@ -256,3 +256,26 @@ def extend_curve(curve: np.ndarray, extra_length: float) -> np.ndarray:
     new_end = np.array(extendline((curve[-2], curve[-1]), extra_length))
 
     return np.vstack((new_start, curve, new_end))
+
+
+def straighten_curve(curve: np.ndarray) -> np.ndarray:
+    """
+    Given an (N, 2) array of points (x, y), return a 1d length-N array of coordinates along the curve
+
+    The first co-ordinate is the start of the curve (not 0)
+
+    :param curve: curve to straighten as an (N, 2) array of points
+    :returns: straightened curve as a length-N array of coordinates
+
+    """
+    x_diffs = curve[1:, 0] - curve[:-1, 0]
+    y_diffs = curve[1:, 1] - curve[:-1, 1]
+    lengths = np.sqrt(x_diffs**2 + y_diffs**2)
+
+    # Prepend with 0
+    lengths = np.concatenate(([0], lengths))
+    
+    # Cumulative sum
+    lengths = np.cumsum(lengths)
+
+    return curve[0, 1] + lengths
