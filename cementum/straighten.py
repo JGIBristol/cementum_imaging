@@ -238,6 +238,21 @@ def extendline(
     line_length = distance.euclidean(start, end)
 
     new_end_x = end[0] + ((end[0] - start[0]) / line_length * extra_length)
-    new_end_y = end[1] + ((end[1] - end[1]) / line_length * extra_length)
+    new_end_y = end[1] + ((end[1] - start[1]) / line_length * extra_length)
 
     return (new_end_x, new_end_y)
+
+
+def extend_curve(curve: np.ndarray, extra_length: float) -> np.ndarray:
+    """
+    Given an (N, 2) array of points, extend at both ends by the given length to give
+    an (N + 2, 2) array of points.
+
+    :param curve: curve to extend as an (N, 2) array of points
+    :param extra_length: the length to extend the curve by
+
+    """
+    new_start = np.array(extendline((curve[1], curve[0]), extra_length))
+    new_end = np.array(extendline((curve[-2], curve[-1]), extra_length))
+
+    return np.vstack((new_start, curve, new_end))
