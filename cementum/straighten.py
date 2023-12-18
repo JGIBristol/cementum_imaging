@@ -274,8 +274,23 @@ def straighten_curve(curve: np.ndarray) -> np.ndarray:
 
     # Prepend with 0
     lengths = np.concatenate(([0], lengths))
-    
+
     # Cumulative sum
     lengths = np.cumsum(lengths)
 
     return curve[0, 1] + lengths
+
+
+def affine_transform_matrix(
+    start_line: np.ndarray, end_line: np.ndarray, *, partial: bool = False
+) -> np.ndarray:
+    """
+    Calculate the affine transformation matrix to transform the start line to the end line
+
+    :param start_line: start line to transform
+    :param end_line: end line to transform to
+    :param partial: whether to return a partial transformation matrix (only translation, rotation and uniform scaling)
+
+    :returns: 3x3 transformation matrix
+
+    """
