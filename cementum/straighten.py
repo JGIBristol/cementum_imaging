@@ -281,16 +281,38 @@ def straighten_curve(curve: np.ndarray) -> np.ndarray:
     return curve[0, 1] + lengths
 
 
-def affine_transform_matrix(
-    start_line: np.ndarray, end_line: np.ndarray, *, partial: bool = False
+def partial_transform_matrix(
+    start_line: np.ndarray, end_line: np.ndarray
 ) -> np.ndarray:
     """
     Calculate the affine transformation matrix to transform the start line to the end line
 
-    :param start_line: start line to transform
-    :param end_line: end line to transform to
+    :param start_line: start line to transform, as an (N, 2) array of points
+    :param end_line: end line to transform to, as an (N, 2) array of points
     :param partial: whether to return a partial transformation matrix (only translation, rotation and uniform scaling)
 
-    :returns: 3x3 transformation matrix
+    :returns: 2x3 transformation matrix
 
     """
+
+    matrix, inliers = cv2.estimateAffinePartial2D(start_line, end_line)
+
+    # Check there are no outliers
+    # for inlier, start, end in zip(inliers, start_line, end_line):
+    #     if not inlier:
+    #         raise ValueError(f"Outlier found at: {start=}->{end=}")
+
+    return matrix
+
+
+def transform_points(points: np.ndarray, matrix: np.ndarray) -> np.ndarray:
+    """
+    Transform the given points by the given matrix
+
+    :param points: points to transform, as an (N, 2) array of points
+    :param matrix: transformation matrix, as a 2x3 array
+
+    :returns: transformed points as an (N, 2) array of points
+
+    """
+    return cv2.transform(points.reshape(1, -1, 2), matrix).reshape(-1, 2)
