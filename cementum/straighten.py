@@ -335,14 +335,6 @@ def mask_mesh(
 
     # Find the edges of the mask
     first_edge, last_edge = _identify_edges(find_edges(mask))
-    print(np.unique(mask))
-    import matplotlib.pyplot as plt
-
-    fig, axis = plt.subplots()
-    axis.imshow(mask)
-    axis.plot(first_edge[:, 0], first_edge[:, 1], "r-")
-    axis.plot(last_edge[:, 0], last_edge[:, 1], "r-")
-    fig.savefig("mask.png")
 
     # Fit polynomials to them
     first_poly = _fit_polynomial(first_edge, poly_degree)
@@ -353,7 +345,6 @@ def mask_mesh(
 
     pts = []
     for y_val, first, last in zip(y_vals, first_poly(y_vals), last_poly(y_vals)):
-        print(first, last, y_val)
         # Find points on the left of the curve
         pts.append(
             np.column_stack([np.linspace(0, first, n_left), np.full(n_left, y_val)])
@@ -367,14 +358,12 @@ def mask_mesh(
         )
 
         # Find points on the right of the curve
-        print(last, mask.shape[0])
         pts.append(
             np.column_stack(
                 [np.linspace(last, mask.shape[0], n_right), np.full(n_right, y_val)]
             )
         )
     pts = np.concatenate(pts, axis=0)
-    print(pts)
 
     # Order the points by y-value, then x
     return pts[np.lexsort((pts[:, 0], pts[:, 1]))]
