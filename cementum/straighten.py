@@ -318,6 +318,76 @@ def transform_points(points: np.ndarray, matrix: np.ndarray) -> np.ndarray:
     return cv2.transform(points.reshape(1, -1, 2), matrix).reshape(-1, 2)
 
 
+def straight_mesh(
+    mask: np.ndarray,
+    n_y: int,
+    n_x: tuple[int, int, int],
+    *,
+    poly_degree: int = 6,
+) -> np.ndarray:
+    """
+    From a mask, create a corresponding straightened mesh
+
+    Here the cementum region is centred on the same place as in the original mask,
+    and the width is such that the overall area is the same.
+    This means that it will be slightly longer than the original mask
+
+    """
+
+    def length(curve: np.ndarray) -> float:
+        return np.sum(np.sqrt(np.diff(curve[:, 0]) ** 2 + np.diff(curve[:, 1]) ** 2))
+
+    def area(curve1: np.ndarray, curve2: np.ndarray) -> float:
+        # Create a shapely polygon
+        # Reverse the second curve so that the polygon is closed and the points describe
+        # a path around it in the right sense
+        return shapely.Polygon(np.vstack([curve1, curve2[::-1]])).area
+
+    n_left, n_inside, n_right = n_x
+
+    # Find the edges of the mask
+    first_edge, last_edge = _identify_edges(find_edges(mask))
+
+    # Find their average length
+    avg_length = (length(first_edge) + length(last_edge)) / 2
+
+    # Find the area enclosed
+    total_area = area(first_edge, last_edge)
+
+    # Find the width
+    width = total_area / avg_length
+
+    # Find the average x-coordinate of the edges
+    # This will be the centre of the straight region in the new mask
+    middle = (np.mean(first_edge[:, 0]) + np.mean(last_edge[:, 0])) / 2
+    left = middle - width / 2
+    right = middle + width / 2
+
+    pts = []
+    for y_val in np.linspace(0, mask.shape[1], n_y, endpoint=True):
+        pts.append(
+            np.column_stack([np.linspace(0, left, n_left), np.full(n_left, y_val)])
+        )
+
+        # Find points in the middle of the curve
+        pts.append(
+            np.column_stack(
+                [np.linspace(left, right, n_inside), np.full(n_inside, y_val)]
+            )
+        )
+
+        # Find points on the right of the curve
+        pts.append(
+            np.column_stack(
+                [np.linspace(right, mask.shape[0], n_right), np.full(n_right, y_val)]
+            )
+        )
+    pts = np.concatenate(pts, axis=0)
+
+    # Order the points by y-value, then x
+    return pts[np.lexsort((pts[:, 0], pts[:, 1]))]
+
+
 def mask_mesh(
     mask: np.ndarray,
     n_y: int,
@@ -347,13 +417,21 @@ def mask_mesh(
     for y_val, first, last in zip(y_vals, first_poly(y_vals), last_poly(y_vals)):
         # Find points on the left of the curve
         pts.append(
-            np.column_stack([np.linspace(0, first, n_left), np.full(n_left, y_val)])
+            np.column_stack(
+                [
+                    np.linspace(0, first, n_left - 1, endpoint=False),
+                    np.full(n_left - 1, y_val),
+                ]
+            )
         )
 
         # Find points in the middle of the curve
         pts.append(
             np.column_stack(
-                [np.linspace(first, last, n_inside), np.full(n_inside, y_val)]
+                [
+                    np.linspace(first, last, n_inside - 1, endpoint=False),
+                    np.full(n_inside - 1, y_val),
+                ]
             )
         )
 
