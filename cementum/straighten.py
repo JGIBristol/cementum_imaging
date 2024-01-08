@@ -364,7 +364,7 @@ def straight_mesh(
     right = middle + width / 2
 
     pts = []
-    for y_val in np.linspace(0, mask.shape[1], n_y, endpoint=True):
+    for y_val in np.linspace(0, avg_length, n_y, endpoint=True):
         pts.append(
             np.column_stack([np.linspace(0, left, n_left), np.full(n_left, y_val)])
         )
