@@ -316,3 +316,65 @@ def transform_points(points: np.ndarray, matrix: np.ndarray) -> np.ndarray:
 
     """
     return cv2.transform(points.reshape(1, -1, 2), matrix).reshape(-1, 2)
+
+
+def mask_mesh(
+    mask: np.ndarray,
+    n_y: int,
+    n_x: tuple[int, int, int],
+    *,
+    poly_degree: int = 6,
+) -> np.ndarray:
+    """
+    Given a mask, return a mesh of points that are evenly spaced within the masked regions
+
+    The mask should run from the top to the bottom of the image
+
+    """
+    n_left, n_inside, n_right = n_x
+
+    # Find the edges of the mask
+    first_edge, last_edge = _identify_edges(find_edges(mask))
+    print(np.unique(mask))
+    import matplotlib.pyplot as plt
+
+    fig, axis = plt.subplots()
+    axis.imshow(mask)
+    axis.plot(first_edge[:, 0], first_edge[:, 1], "r-")
+    axis.plot(last_edge[:, 0], last_edge[:, 1], "r-")
+    fig.savefig("mask.png")
+
+    # Fit polynomials to them
+    first_poly = _fit_polynomial(first_edge, poly_degree)
+    last_poly = _fit_polynomial(last_edge, poly_degree)
+
+    # Create an array of y-values
+    y_vals = np.linspace(0, mask.shape[1], n_y, endpoint=True)
+
+    pts = []
+    for y_val, first, last in zip(y_vals, first_poly(y_vals), last_poly(y_vals)):
+        print(first, last, y_val)
+        # Find points on the left of the curve
+        pts.append(
+            np.column_stack([np.linspace(0, first, n_left), np.full(n_left, y_val)])
+        )
+
+        # Find points in the middle of the curve
+        pts.append(
+            np.column_stack(
+                [np.linspace(first, last, n_inside), np.full(n_inside, y_val)]
+            )
+        )
+
+        # Find points on the right of the curve
+        print(last, mask.shape[0])
+        pts.append(
+            np.column_stack(
+                [np.linspace(last, mask.shape[0], n_right), np.full(n_right, y_val)]
+            )
+        )
+    pts = np.concatenate(pts, axis=0)
+    print(pts)
+
+    # Order the points by y-value, then x
+    return pts[np.lexsort((pts[:, 0], pts[:, 1]))]
