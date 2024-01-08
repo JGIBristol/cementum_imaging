@@ -10,6 +10,7 @@ from scipy.interpolate import interp1d
 from PIL import ImageFilter, Image
 from skimage.morphology import skeletonize
 from sklearn.decomposition import PCA
+from skimage.transform import warp, PiecewiseAffineTransform
 
 
 def find_edges(image: np.ndarray) -> np.ndarray:
@@ -366,13 +367,21 @@ def straight_mesh(
     pts = []
     for y_val in np.linspace(0, avg_length, n_y, endpoint=True):
         pts.append(
-            np.column_stack([np.linspace(0, left, n_left), np.full(n_left, y_val)])
+            np.column_stack(
+                [
+                    np.linspace(0, left, n_left - 1, endpoint=False),
+                    np.full(n_left - 1, y_val),
+                ]
+            )
         )
 
         # Find points in the middle of the curve
         pts.append(
             np.column_stack(
-                [np.linspace(left, right, n_inside), np.full(n_inside, y_val)]
+                [
+                    np.linspace(left, right, n_inside - 1, endpoint=False),
+                    np.full(n_inside - 1, y_val),
+                ]
             )
         )
 
@@ -445,3 +454,26 @@ def mask_mesh(
 
     # Order the points by y-value, then x
     return pts[np.lexsort((pts[:, 0], pts[:, 1]))]
+
+
+def apply_transformation(
+    image: np.ndarray, curve_mesh: np.ndarray, straight_mesh: np.ndarray, **warp_kw
+) -> np.ndarray:
+    """
+    Apply the transformation to the image
+
+    """
+    # Estimate the transformation
+    transform = PiecewiseAffineTransform()
+    result = transform.estimate(curve_mesh, straight_mesh)
+    assert result
+
+    # Apply the transformation to the image
+    return warp(
+        image,
+        transform.inverse,
+        order=0 if "order" not in warp_kw else warp_kw["order"],
+        clip=False if "clip" not in warp_kw else warp_kw["clip"],
+        cval=255 if "cval" not in warp_kw else warp_kw["cval"],
+        **warp_kw,
+    )
