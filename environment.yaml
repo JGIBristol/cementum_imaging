@@ -16,5 +16,6 @@ dependencies:
   - nbdime
   - black
   - more-itertools
+  - tqdm
   - pip:
     - tensorflow-cpu==2.14.0
