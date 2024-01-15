@@ -94,12 +94,12 @@ def find_cementum_edges(
     """
     # Choose initial values if not specified
     if not initial_guess:
-        initial_guess = [75, 18, 600, 22, 10, 85, 27, 2, 0.62]
+        initial_guess = [150, 18, 600, 22, 10, 85, 27, 2, 0.62]
 
     assert len(initial_guess) == 9, "Initial guess must be length 9"
 
     # independent variable is just the pixel number
-    x = np.arange(straightened_img.shape[0])
+    x = np.arange(straightened_img.shape[1])
 
     # Find the mean of each column
     y = np.mean(straightened_img, axis=0)
