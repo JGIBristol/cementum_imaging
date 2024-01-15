@@ -7,7 +7,7 @@ from scipy.stats import norm
 from scipy.optimize import curve_fit
 
 
-def fit_fcn_extra_peak(
+def fit_fcn(
     x,
     a: float,
     b: float,
@@ -72,7 +72,7 @@ def _fit_curve(x: np.ndarray, values: np.ndarray, initial_values: list):
     )
 
     popt, pcov = curve_fit(
-        fit_fcn_extra_peak,
+        fit_fcn,
         x,
         values,
         p0=initial_values,
