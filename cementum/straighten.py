@@ -468,12 +468,14 @@ def apply_transformation(
     result = transform.estimate(curve_mesh, straight_mesh)
     assert result
 
+    # Bad solution
+    kw = {"clip": False, "cval": 255, "order": 0}
+    if "clip" in warp_kw:
+        kw["clip"] = warp_kw["clip"]
+    if "cval" in warp_kw:
+        kw["cval"] = warp_kw["cval"]
+    if "order" in warp_kw:
+        kw["order"] = warp_kw["order"]
+
     # Apply the transformation to the image
-    return warp(
-        image,
-        transform.inverse,
-        order=0 if "order" not in warp_kw else warp_kw["order"],
-        clip=False if "clip" not in warp_kw else warp_kw["clip"],
-        cval=255 if "cval" not in warp_kw else warp_kw["cval"],
-        **warp_kw,
-    )
+    return warp(image, transform.inverse, **kw, preserve_range=True)
