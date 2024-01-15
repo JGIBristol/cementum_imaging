@@ -4,6 +4,7 @@ Classical segementation of the cementum layers
 """
 import numpy as np
 from scipy.stats import norm
+from scipy.optimize import curve_fit
 
 
 def fit_fcn(
@@ -47,7 +48,46 @@ def fit_fcn(
     return retval
 
 
-def find_cementum_edges(straightened_img: np.ndarray) -> tuple[float, float]:
+def _fit_curve(x: np.ndarray, values: np.ndarray, initial_values: list):
+    """
+    Fit the curve
+
+    """
+    bounds = (
+        [0, 0, -np.inf, 0, 0, 0, 0, 0, 0, 0, 0, -np.inf],
+        [
+            np.inf,
+            np.inf,
+            np.inf,
+            np.inf,
+            np.inf,
+            np.inf,
+            np.inf,
+            np.inf,
+            np.inf,
+            np.inf,
+            np.inf,
+            np.inf,
+        ],
+    )
+
+    popt, pcov = curve_fit(
+        fit_fcn,
+        x,
+        values,
+        p0=initial_values,
+        bounds=bounds,
+    )
+
+    return popt
+
+
+def find_cementum_edges(
+    straightened_img: np.ndarray,
+    initial_guess: list = None,
+    *,
+    return_params: bool = False
+) -> tuple:
     """
     Find the edges of the cementum layers in a straightened image; the cementum must
     run vertically in the image, with the background on the left.
@@ -62,7 +102,33 @@ def find_cementum_edges(straightened_img: np.ndarray) -> tuple[float, float]:
         - A linear increase throughout the dentine
 
     :param straightened_img: the straightened image
+    :param initial_guess: initial guess for the parameters of the fit function. Must be length 12
+    :param return_params: if True, return the parameters of the fit function
 
-    :return: x-locations of the cementum edges
+    :return: x-locations of the cementum edges as a tuple.
+        Additionally return the parameters of the fit function if specified
 
     """
+    # Choose initial values if not specified
+    if not initial_guess:
+        initial_guess = [75, 35, 85, 0, 27, 500, 25, 10, 85, 27, 2, 0.52]
+
+    assert len(initial_guess) == 12, "Initial guess must be length 12"
+
+    # independent variable is just the pixel number
+    x = np.arange(straightened_img.shape[0])
+
+    # Find the mean of each column
+    y = np.mean(straightened_img, axis=0)
+
+    # Fit
+    params = _fit_curve(x, y, initial_guess)
+
+    # Find the x-locations of the cementum edges
+    a, d1, d2, d3 = [params[i] for i in [0, 3, 6, 9]]
+    start, end = a + d1, a + d1 + d2 + d3
+
+    if return_params:
+        return (start, end), params
+
+    return start, end
