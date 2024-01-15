@@ -7,7 +7,7 @@ from scipy.stats import norm
 from scipy.optimize import curve_fit
 
 
-def fit_fcn(
+def fit_fcn_extra_peak(
     x,
     a: float,
     b: float,
@@ -54,7 +54,7 @@ def _fit_curve(x: np.ndarray, values: np.ndarray, initial_values: list):
 
     """
     bounds = (
-        [0, 0, -np.inf, 0, 0, 0, 0, 0, 0, 0, 0, -np.inf],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -np.inf],
         [
             np.inf,
             np.inf,
@@ -72,7 +72,7 @@ def _fit_curve(x: np.ndarray, values: np.ndarray, initial_values: list):
     )
 
     popt, pcov = curve_fit(
-        fit_fcn,
+        fit_fcn_extra_peak,
         x,
         values,
         p0=initial_values,
@@ -111,7 +111,7 @@ def find_cementum_edges(
     """
     # Choose initial values if not specified
     if not initial_guess:
-        initial_guess = [75, 35, 85, 0, 27, 500, 25, 10, 85, 27, 2, 0.52]
+        initial_guess = [75, 18, 50, 3, 2, 600, 22, 10, 85, 27, 2, 0.62]
 
     assert len(initial_guess) == 12, "Initial guess must be length 12"
 
