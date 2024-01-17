@@ -475,14 +475,11 @@ def _remove_padding(image: np.ndarray) -> np.ndarray:
     # Find which rows are all 0
     zero_rows = np.all(image == 0, axis=1)
 
-    # Find the index of the first zero row
-    first_row = zero_rows.argmax()
-
-    # Check all the rows after this are zero
-    assert np.all(zero_rows[first_row:])
+    # Find the last non-zero row from the bottom
+    last_non_zero_row = np.max(np.where(zero_rows == False))
 
     # Remove zero rows from the bottom
-    return image[:first_row]
+    return image[: last_non_zero_row + 1]
 
 
 def apply_transformation(
@@ -500,12 +497,6 @@ def apply_transformation(
     # If the image doesn't extend as far as the mesh, pad it with zeros
     y_extent = straight_mesh[:, 1].max()
     if image.shape[1] < y_extent:
-        # Emit warning
-        warnings.warn(
-            f"Image {image.shape} doesn't extend as far as the mesh in the y-dirn"
-            f"({straight_mesh[:, 0].max()}, {y_extent})"
-        )
-
         # Find how many pixels to pad by
         extra_pixels = int(straight_mesh[:, 1].max() - image.shape[1])
 
