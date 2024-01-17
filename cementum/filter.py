@@ -18,14 +18,14 @@ def steerable_filter(img: np.ndarray, theta: float, sigma: float):
     :return: the filtered image
 
     """
+    # Sigma needs to be at least 0.4 for the width to be at least 1
+    assert sigma >= 0.4
+
     # Convert to radians
     theta = -theta * (np.pi / 180)
 
-    # Find the width of the filter: must be at least 1
+    # Generate some x values spanning the filter; we need at least 1
     width = int(np.floor((5 / 2) * sigma))
-    assert width >= 1
-
-    # Generate some x values spanning the filter
     x = np.arange(-width, width + 1)
 
     # Calculate the Gaussian and its derivative
@@ -44,32 +44,45 @@ def steerable_filter(img: np.ndarray, theta: float, sigma: float):
 
 
 def apply_weighted_filters(
-    image: np.ndarray, filterLvl: float, *, weight: float = 0.5
+    image: np.ndarray,
+    widths: tuple,
+    *,
+    weights: tuple = None,
+    filterLvl: float = 2,
+    scale_factor: float = 100,
 ) -> np.ndarray:
     """
     Apply a vertical Gaussian filter to an image, using a combination of width-1 and width-2 filters.
 
     :param image: the image to apply the filter to
+    :param widths: the widths of the filters to use
+    :param weights: the relative weighting of filters. If not specified, uses equally weighted filters
     :param filterLvl: the strength of the filter.
         np.inf returns the original image; 0 sets all pixels to NaN or inf.
-        2 might be a reasonable value to start with
-    :param weight: the weight to give to the width-1 filter. Must be
+    :param scale_factor: scale factor applied to the filters
 
-    :raises ValueError: if the weight is not between 0 and 1
+    :raises ValueError: if any weight is not between 0 and 1
 
     :returns: the filtered image as an 8-bit array
 
     """
-    if not 0 <= weight <= 1:
-        raise ValueError("Weight must be between 0 and 1")
+    n_filters = len(widths)
+    if weights is None:
+        weights = [1 / n_filters] * n_filters
 
-    # Make two filters with different widths
-    J = steerable_filter(image, 0, 1)
-    K = steerable_filter(image, 0, 2)
+    for weight in weights:
+        if not 0 <= weight <= 1:
+            raise ValueError("Weights must all be between 0 and 1")
 
-    # Take a weighted average of the two filters
-    mask = image + ((weight * J + (1 - weight) * K) * 10)
+    # Make filters with different widths
+    filters = [steerable_filter(image, 0, width) for width in widths]
 
+    # Take a weighted average of the filters
+    mask = image.copy().astype(np.float64)
+    for weight, filter in zip(weights, filters):
+        mask += weight * filter * scale_factor
+
+    # Apply the combined filters to the image, scaling by filterlvl
     filtered = image + (mask / filterLvl)
 
     # Scale the image to 16-bit
