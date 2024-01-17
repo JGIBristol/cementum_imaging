@@ -512,5 +512,11 @@ def apply_transformation(
     if "order" in warp_kw:
         kw["order"] = warp_kw["order"]
 
-    # Apply the transformation to the image, removing any padding
-    return _remove_padding(warp(image, transform.inverse, **kw, preserve_range=True))
+    # Apply the transformation to the image
+    transformed_image = warp(image, transform.inverse, **kw, preserve_range=True)
+
+    # Bug: sometimes columns get added to the right of the image; check for this and remove them here
+    # TODO
+
+    # Remove padding
+    return _remove_padding(transformed_image)
