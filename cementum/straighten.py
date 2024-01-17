@@ -2,6 +2,8 @@
 Functions and helpers for straightening the images
 
 """
+import warnings
+
 import numpy as np
 import cv2
 import shapely
@@ -319,6 +321,10 @@ def transform_points(points: np.ndarray, matrix: np.ndarray) -> np.ndarray:
     return cv2.transform(points.reshape(1, -1, 2), matrix).reshape(-1, 2)
 
 
+def _length(curve: np.ndarray) -> float:
+    return np.sum(np.sqrt(np.diff(curve[:, 0]) ** 2 + np.diff(curve[:, 1]) ** 2))
+
+
 def straight_mesh(
     mask: np.ndarray,
     n_y: int,
@@ -335,9 +341,6 @@ def straight_mesh(
 
     """
 
-    def length(curve: np.ndarray) -> float:
-        return np.sum(np.sqrt(np.diff(curve[:, 0]) ** 2 + np.diff(curve[:, 1]) ** 2))
-
     def area(curve1: np.ndarray, curve2: np.ndarray) -> float:
         # Create a shapely polygon
         # Reverse the second curve so that the polygon is closed and the points describe
@@ -350,7 +353,11 @@ def straight_mesh(
     first_edge, last_edge = _identify_edges(find_edges(mask))
 
     # Find their average length
-    avg_length = (length(first_edge) + length(last_edge)) / 2
+    avg_length = (_length(first_edge) + _length(last_edge)) / 2
+
+    # y values are linearly spaced, plus an extra point at the bottom
+    y_vals = np.linspace(0, avg_length, n_y, endpoint=True)
+    y_vals = np.concatenate((y_vals, [avg_length + y_vals[-1] - y_vals[-2]]))
 
     # Find the area enclosed
     total_area = area(first_edge, last_edge)
@@ -365,7 +372,7 @@ def straight_mesh(
     right = middle + width / 2
 
     pts = []
-    for y_val in np.linspace(0, avg_length, n_y, endpoint=True):
+    for y_val in y_vals:
         pts.append(
             np.column_stack(
                 [
@@ -422,6 +429,10 @@ def mask_mesh(
     # Create an array of y-values
     y_vals = np.linspace(0, mask.shape[1], n_y, endpoint=True)
 
+    # Append another y value to the end
+    avg_length = (_length(first_edge) + _length(last_edge)) / 2
+    y_vals = np.concatenate((y_vals, [avg_length + y_vals[-1] - y_vals[-2]]))
+
     pts = []
     for y_val, first, last in zip(y_vals, first_poly(y_vals), last_poly(y_vals)):
         # Find points on the left of the curve
@@ -456,6 +467,24 @@ def mask_mesh(
     return pts[np.lexsort((pts[:, 0], pts[:, 1]))]
 
 
+def _remove_padding(image: np.ndarray) -> np.ndarray:
+    """
+    Remove vertical padding, assuming it is 0-padded
+
+    """
+    # Find which rows are all 0
+    zero_rows = np.all(image == 0, axis=1)
+
+    # Find the index of the first zero row
+    first_row = zero_rows.argmax()
+
+    # Check all the rows after this are zero
+    assert np.all(zero_rows[first_row:])
+
+    # Remove zero rows from the bottom
+    return image[:first_row]
+
+
 def apply_transformation(
     image: np.ndarray, curve_mesh: np.ndarray, straight_mesh: np.ndarray, **warp_kw
 ) -> np.ndarray:
@@ -468,7 +497,22 @@ def apply_transformation(
     result = transform.estimate(curve_mesh, straight_mesh)
     assert result
 
-    # Bad solution
+    # If the image doesn't extend as far as the mesh, pad it with zeros
+    y_extent = straight_mesh[:, 1].max()
+    if image.shape[1] < y_extent:
+        # Emit warning
+        warnings.warn(
+            f"Image {image.shape} doesn't extend as far as the mesh in the y-dirn"
+            f"({straight_mesh[:, 0].max()}, {y_extent})"
+        )
+
+        # Find how many pixels to pad by
+        extra_pixels = int(straight_mesh[:, 1].max() - image.shape[1])
+
+        # Pad the image
+        image = np.pad(image, ((0, extra_pixels), (0, 0)), mode="constant")
+
+    # This is a bad solution
     kw = {"clip": False, "cval": 255, "order": 0}
     if "clip" in warp_kw:
         kw["clip"] = warp_kw["clip"]
@@ -477,5 +521,5 @@ def apply_transformation(
     if "order" in warp_kw:
         kw["order"] = warp_kw["order"]
 
-    # Apply the transformation to the image
-    return warp(image, transform.inverse, **kw, preserve_range=True)
+    # Apply the transformation to the image, removing any padding
+    return _remove_padding(warp(image, transform.inverse, **kw, preserve_range=True))
