@@ -3,6 +3,7 @@ Steerable Gaussian filter for cementum preprocessing
 
 """
 import numpy as np
+from scipy.stats import norm
 from scipy.ndimage.filters import convolve1d
 
 
@@ -25,11 +26,11 @@ def steerable_filter(img: np.ndarray, theta: float, sigma: float):
     assert width >= 1
 
     # Generate some x values spanning the filter
-    x = np.linspace(-width, width, (width * 2) + 1)
+    x = np.arange(-width, width + 1)
 
     # Calculate the Gaussian and its derivative
-    gaussian = np.exp(-(x**2) / (2 * sigma**2))
-    derivative = (x / sigma) * np.exp(-(x**2) / (2 * sigma**2))
+    gaussian = norm.pdf(x, loc=0, scale=sigma)
+    derivative = -(x / sigma) * gaussian
 
     # Calculate image gradients along axes
     i1 = convolve1d(np.asarray(np.rot90(img)), derivative, axis=0, mode="constant")
@@ -42,44 +43,37 @@ def steerable_filter(img: np.ndarray, theta: float, sigma: float):
     return np.cos(theta) * Ix + np.sin(theta) * Iy
 
 
-def steerGaussWrapper(cem, filterLvl):
+def apply_weighted_filters(
+    image: np.ndarray, filterLvl: float, *, weight: float = 0.5
+) -> np.ndarray:
     """
-    Perform steerable gaussian filter - must have "steerGauss.m" open.
-    """
-    J = steerable_filter(cem, 90, 1)
-    K = steerable_filter(cem, 90, 2)
+    Apply a vertical Gaussian filter to an image, using a combination of width-1 and width-2 filters.
 
-    """
-    then create mask
-    """
+    :param image: the image to apply the filter to
+    :param filterLvl: the strength of the filter.
+        np.inf returns the original image; 0 sets all pixels to NaN or inf.
+        2 might be a reasonable value to start with
+    :param weight: the weight to give to the width-1 filter. Must be
 
-    mask = cem + (J * 10)
-    maskToSave = cem + (K * 10)
+    :raises ValueError: if the weight is not between 0 and 1
 
-    """
-    make array of both matrices
-    """
-    maskArray = np.uint8(mask)
-    cemArray = np.uint8(cem)
+    :returns: the filtered image as an 8-bit array
 
     """
-    And filter
-    """
-    filteredCem = cem + (mask / filterLvl)
+    if not 0 <= weight <= 1:
+        raise ValueError("Weight must be between 0 and 1")
 
-    filterVec = np.mean(filteredCem, 0)
-    filterVec = filterVec[filterVec != 0]
+    # Make two filters with different widths
+    J = steerable_filter(image, 0, 1)
+    K = steerable_filter(image, 0, 2)
 
-    dynamicRange = max(filterVec) - min(filterVec)
+    # Take a weighted average of the two filters
+    mask = image + ((weight * J + (1 - weight) * K) * 10)
 
-    eightBitTest = filteredCem * (
-        256 * ((filteredCem - np.min(filterVec)) / np.max(filteredCem))
-    )
-    eightBitTest = np.uint8(eightBitTest)
+    filtered = image + (mask / filterLvl)
 
-    sixteenBitTest = filteredCem * (
-        65536 * ((filteredCem - np.min(filterVec)) / np.max(filteredCem))
-    )
-    sixteenBitTest = np.uint16(sixteenBitTest)
+    # Scale the image to 16-bit
+    min_, max_ = np.min(filtered), np.max(filtered)
+    eight_bit_img = (2**16 * (((filtered - min_) / (max_ - min_)))).astype(np.uint16)
 
-    return filteredCem, eightBitTest
+    return eight_bit_img
