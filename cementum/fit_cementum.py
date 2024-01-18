@@ -115,3 +115,20 @@ def find_cementum_edges(
         return (start, end), params
 
     return start, end
+
+
+def fit_line(n_pixels: int, intensity: np.ndarray) -> tuple[float, float]:
+    """
+    Fit a line to the rightmost n_pixels in an intensity profile.
+
+    :param n_pixels: number of pixels to fit
+    :param intensity: intensity profile
+
+    :return: gradient of the line
+    :return reduced chi-squared of the fit
+
+    """
+    # Create an array of x-values
+    # Slice the y_values
+    # Fit a line
+    # Return gradient + reduced chi2
