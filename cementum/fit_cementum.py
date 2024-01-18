@@ -126,14 +126,14 @@ def _reduced_chi2(y, y_fit, *, n_params):
     return np.sum(residuals**2) / (len(y) - n_params)
 
 
-def fit_line(n_pixels: int, intensity: np.ndarray) -> tuple[float, float]:
+def fit_line(n_pixels: int, intensity: np.ndarray) -> tuple[np.ndarray, float]:
     """
     Fit a line to the rightmost n_pixels in an intensity profile.
 
     :param n_pixels: number of pixels to fit
     :param intensity: intensity profile
 
-    :return: gradient of the line
+    :return: fit params: (gradient, intercept) of the line
     :return reduced chi-squared of the fit
 
     """
@@ -150,4 +150,4 @@ def fit_line(n_pixels: int, intensity: np.ndarray) -> tuple[float, float]:
     chi2 = _reduced_chi2(y_vals, _line(x_vals, *params), n_params=2)
 
     # Return gradient + reduced chi2
-    return params[0], chi2
+    return params, chi2
