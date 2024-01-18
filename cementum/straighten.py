@@ -469,21 +469,6 @@ def mask_mesh(
     return pts[np.lexsort((pts[:, 0], pts[:, 1]))]
 
 
-def _remove_padding(image: np.ndarray) -> np.ndarray:
-    """
-    Remove vertical padding, assuming it is 0-padded
-
-    """
-    # Find which rows are all 0
-    zero_rows = np.all(image == 0, axis=1)
-
-    # Find the last non-zero row from the bottom
-    last_non_zero_row = np.max(np.where(zero_rows == False))
-
-    # Remove zero rows from the bottom
-    return image[: last_non_zero_row + 1]
-
-
 def apply_transformation(
     image: np.ndarray, curve_mesh: np.ndarray, straight_mesh: np.ndarray, **warp_kw
 ) -> np.ndarray:
@@ -517,8 +502,7 @@ def apply_transformation(
     # Apply the transformation to the image
     transformed_image = warp(image, transform.inverse, **kw, preserve_range=True)
 
-    # Remove padding
-    return _remove_padding(transformed_image)
+    return transformed_image
 
 
 def remove_white_cols(
@@ -552,3 +536,26 @@ def remove_white_cols(
         straight_image[:, : last_non_zero_col + 1],
         straight_mask[:, : last_non_zero_col + 1],
     )
+
+
+def remove_padding(image: np.ndarray) -> np.ndarray:
+    """
+    Remove padding of 0s at the bottom of an image
+
+    """
+    # Find which rows are all 0
+    zero_rows = np.all(image == 0, axis=1)
+
+    # Find the last non-zero row from the bottom
+    last_non_zero_row = np.max(np.where(zero_rows == False))
+
+    n_to_remove = last_non_zero_row - image.shape[1]
+    warnings.warn(
+        util.coloured(
+            f"Temporary solution: removing {n_to_remove} zero rows from bottom",
+            util.bcolours.WARNING,
+        )
+    )
+
+    # Remove zero rows from the bottom
+    return image[: last_non_zero_row + 1]
