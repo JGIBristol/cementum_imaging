@@ -117,6 +117,15 @@ def find_cementum_edges(
     return start, end
 
 
+def _line(x, a, b):
+    return a * x + b
+
+
+def _reduced_chi2(y, y_fit, *, n_params):
+    residuals = y - y_fit
+    return np.sum(residuals**2) / (len(y) - n_params)
+
+
 def fit_line(n_pixels: int, intensity: np.ndarray) -> tuple[float, float]:
     """
     Fit a line to the rightmost n_pixels in an intensity profile.
@@ -129,6 +138,16 @@ def fit_line(n_pixels: int, intensity: np.ndarray) -> tuple[float, float]:
 
     """
     # Create an array of x-values
+    x_vals = np.arange(len(intensity))[-n_pixels:]
+
     # Slice the y_values
+    y_vals = intensity[-n_pixels:]
+
     # Fit a line
+    params, _ = curve_fit(_line, x_vals, y_vals)
+
+    # Find the reduced chi-squared
+    chi2 = _reduced_chi2(y_vals, _line(x_vals, *params), n_params=2)
+
     # Return gradient + reduced chi2
+    return params[0], chi2
