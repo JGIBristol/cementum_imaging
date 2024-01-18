@@ -14,6 +14,8 @@ from skimage.morphology import skeletonize
 from sklearn.decomposition import PCA
 from skimage.transform import warp, PiecewiseAffineTransform
 
+from . import util
+
 
 def find_edges(image: np.ndarray) -> np.ndarray:
     """
@@ -515,8 +517,38 @@ def apply_transformation(
     # Apply the transformation to the image
     transformed_image = warp(image, transform.inverse, **kw, preserve_range=True)
 
-    # Bug: sometimes columns get added to the right of the image; check for this and remove them here
-    # TODO
-
     # Remove padding
     return _remove_padding(transformed_image)
+
+
+def remove_white_cols(
+    straight_image: np.ndarray, straight_mask: np.ndarray
+) -> np.ndarray:
+    """
+    After the straightening, sometimes the image is padded with white columns on the right hand side.
+    We should remove these columns, from both the image and the mask.
+    This isn't a long term solution, but it will do for now.
+
+    :param straight_image: image after straigtening
+    :param mask: mask after straigtening
+
+    """
+    assert straight_image.shape == straight_mask.shape
+
+    # Find which columns are all white
+    zero_rows = np.all(straight_image == np.max(straight_image), axis=0)
+
+    last_non_zero_col = np.max(np.where(zero_rows == False))
+    n_to_remove = straight_image.shape[0] - last_non_zero_col
+    warnings.warn(
+        util.coloured(
+            f"Temporary solution: removing {n_to_remove} saturated columns from right",
+            util.bcolours.WARNING,
+        )
+    )
+
+    # Find the last non-zero column from the right
+    return (
+        straight_image[:, : last_non_zero_col + 1],
+        straight_mask[:, : last_non_zero_col + 1],
+    )

@@ -2,9 +2,10 @@
 General utilities
 
 """
+from enum import Enum
 
 
-class bcolours:
+class bcolours(Enum):
     HEADER = "\033[95m"
     OKBLUE = "\033[94m"
     OKCYAN = "\033[96m"
@@ -14,3 +15,11 @@ class bcolours:
     ENDC = "\033[0m"
     BOLD = "\033[1m"
     UNDERLINE = "\033[4m"
+
+
+def coloured(string: str, colour: bcolours):
+    """
+    Return a coloured string
+
+    """
+    return f"{colour.value}{string}{bcolours.ENDC.value}"
