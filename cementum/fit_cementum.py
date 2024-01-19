@@ -134,7 +134,8 @@ def fit_line(n_pixels: int, intensity: np.ndarray) -> tuple[np.ndarray, float]:
     :param intensity: intensity profile
 
     :return: fit params: (gradient, intercept) of the line
-    :return reduced chi-squared of the fit
+    :return: reduced chi-squared of the fit
+    return: x-values of the fit
 
     """
     # Create an array of x-values
@@ -150,4 +151,4 @@ def fit_line(n_pixels: int, intensity: np.ndarray) -> tuple[np.ndarray, float]:
     chi2 = _reduced_chi2(y_vals, _line(x_vals, *params), n_params=2)
 
     # Return gradient + reduced chi2
-    return params, chi2
+    return params, chi2, x_vals
