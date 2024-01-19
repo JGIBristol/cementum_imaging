@@ -126,7 +126,7 @@ def _reduced_chi2(y, y_fit, *, n_params):
     return np.sum(residuals**2) / (len(y) - n_params)
 
 
-def fit_line(n_pixels: int, intensity: np.ndarray) -> tuple[np.ndarray, float]:
+def fit_line(n_pixels: int, intensity: np.ndarray) -> tuple[np.ndarray, float, float]:
     """
     Fit a line to the rightmost n_pixels in an intensity profile.
 
@@ -149,6 +149,43 @@ def fit_line(n_pixels: int, intensity: np.ndarray) -> tuple[np.ndarray, float]:
 
     # Find the reduced chi-squared
     chi2 = _reduced_chi2(y_vals, _line(x_vals, *params), n_params=2)
+
+    # Return gradient + reduced chi2
+    return params, chi2, x_vals
+
+
+def line_with_bump(x, a, b, offset, h, s):
+    """
+    Line with a Gaussian bump at x=0
+
+    """
+    return _line(x, a, b) + h * norm(loc=offset + x[0], scale=s).pdf(x)
+
+
+def fit_line_with_bump(
+    n_pixels: int, intensity: np.ndarray
+) -> tuple[np.ndarray, float, float]:
+    """
+    Fit a line with a Gaussian bump at x=0 to the rightmost n_pixels in an intensity profile.
+
+    """
+    # Create an array of x-values
+    x_vals = np.arange(len(intensity))[-n_pixels:]
+
+    # Slice the y_values
+    y_vals = intensity[-n_pixels:]
+
+    # Fit a line
+    params, _ = curve_fit(
+        line_with_bump,
+        x_vals,
+        y_vals,
+        p0=[0, 0, 0, 1, 1],
+        bounds=[[0, 0, -10, 0, 0], [np.inf, np.inf, 10, 30, 10]],
+    )
+
+    # Find the reduced chi-squared
+    chi2 = _reduced_chi2(y_vals, line_with_bump(x_vals, *params), n_params=4)
 
     # Return gradient + reduced chi2
     return params, chi2, x_vals
