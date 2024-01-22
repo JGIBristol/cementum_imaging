@@ -7,6 +7,7 @@ import warnings
 import numpy as np
 from scipy.stats import norm
 from scipy.optimize import curve_fit
+from scipy.signal import argrelmax
 
 from . import util
 
@@ -275,3 +276,29 @@ def fit_line_with_bump_restricted_domain(
 
     # Return gradient + reduced chi2
     return params, chi2, x_vals
+
+
+def find_cementum(
+    left_boundaries: list[int], delta_chi2: list[float], tolerance: float
+) -> int:
+    """
+    Find the approximate location of the cementum-dentine boundary
+
+    Detects the last peak in deltachi2 and returns the appropriate pixel value
+
+    :param left_boundaries: leftmost boundary of the fit region for each fit
+    :param delta_chi2: difference in chi2 value for each fit
+    :param tolerance: value below which it isnt considered a peak
+
+    :return: approximate pixel value of the cementum.
+
+    """
+    deltas = np.diff(delta_chi2)
+    (peak_indices,) = argrelmax(np.diff(delta_chi2))
+    peak_locations = np.array(left_boundaries)[peak_indices]
+
+    significant_peaks = [
+        loc for loc, idx in zip(peak_locations, peak_indices) if deltas[idx] > tolerance
+    ]
+
+    return significant_peaks[0]
