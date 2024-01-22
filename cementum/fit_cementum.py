@@ -180,8 +180,8 @@ def fit_line_with_bump(
         line_with_bump,
         x_vals,
         y_vals,
-        p0=[0, 0, 0, 1, 1],
-        bounds=[[0, 0, -10, 0, 0], [np.inf, np.inf, 10, 30, 10]],
+        p0=[0, 0, 10, 200, 1],
+        bounds=[[-np.inf, -np.inf, 10, 150, 0], [np.inf, np.inf, 20, 500, 4]],
     )
 
     # Find the reduced chi-squared
