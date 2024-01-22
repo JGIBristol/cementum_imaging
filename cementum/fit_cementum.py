@@ -2,9 +2,13 @@
 Classical segementation of the cementum layers
 
 """
+import warnings
+
 import numpy as np
 from scipy.stats import norm
 from scipy.optimize import curve_fit
+
+from . import util
 
 
 def fit_fcn(
@@ -263,7 +267,7 @@ def fit_line_with_bump_restricted_domain(
             bounds=[[-np.inf, -np.inf, -10, 0, 0], [np.inf, np.inf, 20, 500, 10]],
         )
     except RuntimeError as e:
-        print(e)
+        warnings.warn(util.coloured(e, util.bcolours.WARNING))
         return np.zeros(5), np.inf, x_vals
 
     # Find the reduced chi-squared
