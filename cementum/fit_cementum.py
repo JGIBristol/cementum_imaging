@@ -225,3 +225,45 @@ def fit_line_restricted_domain(
 
     # Return gradient + reduced chi2
     return params, chi2, x_vals
+
+
+def fit_line_with_bump_restricted_domain(
+    offset: int,
+    intensity: np.ndarray,
+    *,
+    n_pixels: int = 50,
+) -> tuple[np.ndarray, float, float]:
+    """
+    Fit a line to n_pixels of an image, offset from the right edge by offset_pixels
+
+    :param n_pixels: number of pixels to fit
+    :param intensity: intensity profile
+
+    :return: fit params: (gradient, intercept) of the line
+    :return: reduced chi-squared of the fit
+    return: x-values of the fit
+
+    """
+    # The domain to use for the fit
+    keep = slice(-(n_pixels + offset), -offset if offset else None)
+
+    # Create an array of x-values
+    x_vals = np.arange(len(intensity))[keep]
+
+    # Slice the y_values
+    y_vals = intensity[keep]
+
+    # Fit a line
+    params, _ = curve_fit(
+        line_with_bump,
+        x_vals,
+        y_vals,
+        p0=[0, 0, 10, 200, 1],
+        bounds=[[-np.inf, -np.inf, 10, 150, 0], [np.inf, np.inf, 20, 500, 4]],
+    )
+
+    # Find the reduced chi-squared
+    chi2 = _reduced_chi2(y_vals, line_with_bump(x_vals, *params), n_params=4)
+
+    # Return gradient + reduced chi2
+    return params, chi2, x_vals
