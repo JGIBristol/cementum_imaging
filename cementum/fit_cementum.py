@@ -258,8 +258,8 @@ def fit_line_with_bump_restricted_domain(
         line_with_bump,
         x_vals,
         y_vals,
-        p0=[0, 0, 10, 200, 1],
-        bounds=[[-np.inf, -np.inf, 10, 150, 0], [np.inf, np.inf, 20, 500, 4]],
+        p0=[0, 0, 10, 50, 1],
+        bounds=[[-np.inf, -np.inf, -10, 0, 0], [np.inf, np.inf, 20, 500, 10]],
     )
 
     # Find the reduced chi-squared
