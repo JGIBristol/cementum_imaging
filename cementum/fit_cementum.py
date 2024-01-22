@@ -69,7 +69,7 @@ def find_cementum_edges(
     straightened_img: np.ndarray,
     initial_guess: list = None,
     *,
-    return_params: bool = False
+    return_params: bool = False,
 ) -> tuple:
     """
     Find the edges of the cementum layers in a straightened image; the cementum must
@@ -186,6 +186,42 @@ def fit_line_with_bump(
 
     # Find the reduced chi-squared
     chi2 = _reduced_chi2(y_vals, line_with_bump(x_vals, *params), n_params=4)
+
+    # Return gradient + reduced chi2
+    return params, chi2, x_vals
+
+
+def fit_line_restricted_domain(
+    offset: int,
+    intensity: np.ndarray,
+    *,
+    n_pixels: int = 50,
+) -> tuple[np.ndarray, float, float]:
+    """
+    Fit a line to n_pixels of an image, offset from the right edge by offset_pixels
+
+    :param n_pixels: number of pixels to fit
+    :param intensity: intensity profile
+
+    :return: fit params: (gradient, intercept) of the line
+    :return: reduced chi-squared of the fit
+    return: x-values of the fit
+
+    """
+    # The domain to use for the fit
+    keep = slice(-(n_pixels + offset), offset)
+
+    # Create an array of x-values
+    x_vals = np.arange(len(intensity))[keep]
+
+    # Slice the y_values
+    y_vals = intensity[keep]
+
+    # Fit a line
+    params, _ = curve_fit(_line, x_vals, y_vals)
+
+    # Find the reduced chi-squared
+    chi2 = _reduced_chi2(y_vals, _line(x_vals, *params), n_params=2)
 
     # Return gradient + reduced chi2
     return params, chi2, x_vals
