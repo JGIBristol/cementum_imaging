@@ -254,13 +254,17 @@ def fit_line_with_bump_restricted_domain(
     y_vals = intensity[keep]
 
     # Fit a line
-    params, _ = curve_fit(
-        line_with_bump,
-        x_vals,
-        y_vals,
-        p0=[0, 0, 10, 50, 1],
-        bounds=[[-np.inf, -np.inf, -10, 0, 0], [np.inf, np.inf, 20, 500, 10]],
-    )
+    try:
+        params, _ = curve_fit(
+            line_with_bump,
+            x_vals,
+            y_vals,
+            p0=[0, 0, 10, 50, 1],
+            bounds=[[-np.inf, -np.inf, -10, 0, 0], [np.inf, np.inf, 20, 500, 10]],
+        )
+    except RuntimeError as e:
+        print(e)
+        return np.zeros(5), np.inf, x_vals
 
     # Find the reduced chi-squared
     chi2 = _reduced_chi2(y_vals, line_with_bump(x_vals, *params), n_params=4)
