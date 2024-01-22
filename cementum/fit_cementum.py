@@ -209,7 +209,7 @@ def fit_line_restricted_domain(
 
     """
     # The domain to use for the fit
-    keep = slice(-(n_pixels + offset), offset)
+    keep = slice(-(n_pixels + offset), -offset)
 
     # Create an array of x-values
     x_vals = np.arange(len(intensity))[keep]
