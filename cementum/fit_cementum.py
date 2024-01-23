@@ -292,7 +292,7 @@ def find_cementum(
 
     :param left_boundaries: leftmost boundary of the fit region for each fit
     :param delta_chi2: difference in chi2 value for each fit
-    :param tolerance: value below which it isnt considered a peak
+    :param tolerance: promience below which it isnt considered a peak
     :param rel_height: relative height of the peak as a fraction of its prominence
 
     :return: approximate pixel value of the cementum.
@@ -300,10 +300,10 @@ def find_cementum(
     """
     # Find the peaks
     peak_indices, _ = find_peaks(delta_chi2, height=tolerance)
+    for index in peak_indices:
+        print(index, np.array(delta_chi2)[peak_indices])
 
     # Find the peak intersection points
     _, _, intersection, _ = peak_widths(delta_chi2, peak_indices, rel_height=rel_height)
-    print(intersection[0])
-    print(left_boundaries[int(np.round(intersection[0]))])
 
     return left_boundaries[int(np.round(intersection[0]))]
