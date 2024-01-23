@@ -7,7 +7,7 @@ import warnings
 import numpy as np
 from scipy.stats import norm
 from scipy.optimize import curve_fit
-from scipy.signal import find_peaks
+from scipy.signal import find_peaks, peak_widths
 
 from . import util
 
@@ -279,7 +279,11 @@ def fit_line_with_bump_restricted_domain(
 
 
 def find_cementum(
-    left_boundaries: list[int], delta_chi2: list[float], tolerance: float
+    left_boundaries: list[int],
+    delta_chi2: list[float],
+    *,
+    tolerance: float = 5.0,
+    rel_height: float = 0.95,
 ) -> int:
     """
     Find the approximate location of the cementum-dentine boundary
@@ -289,9 +293,17 @@ def find_cementum(
     :param left_boundaries: leftmost boundary of the fit region for each fit
     :param delta_chi2: difference in chi2 value for each fit
     :param tolerance: value below which it isnt considered a peak
+    :param rel_height: relative height of the peak as a fraction of its prominence
 
     :return: approximate pixel value of the cementum.
 
     """
+    # Find the peaks
     peak_indices, _ = find_peaks(delta_chi2, height=tolerance)
-    return left_boundaries[peak_indices[0]]
+
+    # Find the peak intersection points
+    _, _, intersection, _ = peak_widths(delta_chi2, peak_indices, rel_height=rel_height)
+    print(intersection[0])
+    print(left_boundaries[int(np.round(intersection[0]))])
+
+    return left_boundaries[int(np.round(intersection[0]))]
