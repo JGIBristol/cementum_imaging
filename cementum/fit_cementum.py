@@ -7,7 +7,7 @@ import warnings
 import numpy as np
 from scipy.stats import norm
 from scipy.optimize import curve_fit
-from scipy.signal import argrelmax
+from scipy.signal import find_peaks
 
 from . import util
 
@@ -293,12 +293,5 @@ def find_cementum(
     :return: approximate pixel value of the cementum.
 
     """
-    deltas = np.diff(delta_chi2)
-    (peak_indices,) = argrelmax(np.diff(delta_chi2))
-    peak_locations = np.array(left_boundaries)[peak_indices]
-
-    significant_peaks = [
-        loc for loc, idx in zip(peak_locations, peak_indices) if deltas[idx] > tolerance
-    ]
-
-    return significant_peaks[0]
+    peak_indices, _ = find_peaks(delta_chi2, height=tolerance)
+    return left_boundaries[peak_indices[0]]
