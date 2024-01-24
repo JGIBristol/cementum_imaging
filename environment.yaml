@@ -17,5 +17,6 @@ dependencies:
   - black
   - more-itertools
   - tqdm
+  - ruptures
   - pip:
     - tensorflow-cpu==2.14.0
