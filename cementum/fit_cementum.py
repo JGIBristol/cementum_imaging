@@ -8,6 +8,7 @@ import numpy as np
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 from scipy.signal import find_peaks, peak_widths
+import ruptures as rpt
 
 from . import util
 
@@ -356,3 +357,16 @@ def find_boundary(
     return find_cementum(
         fit_starts, delta_chi2, tolerance=tolerance, rel_height=rel_height
     )
+
+
+def find_background(intensity: np.ndarray):
+    """
+    Assuming it is a region of different intensity on the left of the image,
+    find the location of the background
+
+    :param intensity: array of average pixel intensities
+
+    """
+    edge, *_ = rpt.Binseg(model="l1").fit(intensity).predict(pen=10)
+
+    return edge
