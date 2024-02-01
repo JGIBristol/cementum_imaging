@@ -300,8 +300,6 @@ def find_cementum(
     """
     # Find the peaks
     peak_indices, _ = find_peaks(delta_chi2, height=tolerance)
-    for index in peak_indices:
-        print(index, np.array(delta_chi2)[peak_indices])
 
     # Find the peak intersection points
     _, _, intersection, _ = peak_widths(delta_chi2, peak_indices, rel_height=rel_height)
@@ -329,7 +327,7 @@ def find_boundary(
 
     """
     # Define an array of points to use as the starting x value in the sliding window
-    fit_starts = np.arange(0, len(intensity) - 2 * domain_length, step_size)
+    fit_starts = np.arange(0, len(intensity) - 2 * domain_length, step_size)[::-1]
 
     # Define arrays for storing the chi2s
     line_chi2s = np.zeros_like(fit_starts)
