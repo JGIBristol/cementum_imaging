@@ -307,3 +307,54 @@ def find_cementum(
     _, _, intersection, _ = peak_widths(delta_chi2, peak_indices, rel_height=rel_height)
 
     return left_boundaries[int(np.round(intersection[0]))]
+
+
+def find_boundary(
+    intensity: np.ndarray,
+    *,
+    domain_length: int,
+    tolerance: float = 5.0,
+    rel_height: float = 0.95,
+    step_size: int = 3,
+) -> int:
+    """
+    Given an array of average pixel intensities, find the location of the cementum-dentin boundary
+
+    :param intensity: array of average pixel intensities
+    :param domain_length: number of pixels in the fit domain
+    :param tolerance: prominence below which it isnt considered a peak
+    :param rel_height: relative height of the peak
+
+    :returns: approximate pixel value of the cementum-dentin boundary
+
+    """
+    # Define an array of points to use as the starting x value in the sliding window
+    fit_starts = np.arange(0, len(intensity) - 2 * domain_length, step_size)
+
+    # Define arrays for storing the chi2s
+    line_chi2s = np.zeros_like(fit_starts)
+    bump_chi2s = np.zeros_like(fit_starts)
+
+    # Perform the fits
+    for i, start in enumerate(fit_starts):
+        _, line_chi2, _ = fit_line_restricted_domain(
+            offset=start,
+            intensity=intensity,
+            n_pixels=domain_length,
+        )
+        _, bump_chi2, _ = fit_line_with_bump_restricted_domain(
+            offset=start,
+            intensity=intensity,
+            n_pixels=domain_length,
+        )
+
+        line_chi2s[i] = line_chi2
+        bump_chi2s[i] = bump_chi2
+
+    # Find delta chi2
+    delta_chi2 = line_chi2s - bump_chi2s
+
+    # Find the location of the deltachi2 peak
+    return find_cementum(
+        fit_starts, delta_chi2, tolerance=tolerance, rel_height=rel_height
+    )
