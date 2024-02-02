@@ -30,6 +30,10 @@ class Params:
     filter_sigma: float
     blur_sigma: float
 
+    # Ridge detection
+    ridge_threshold: float
+    ridge_height: float
+
 
 def count_layers(image_path: str, mask_path: str, params: Params) -> list[int]:
     """
@@ -66,4 +70,8 @@ def count_layers(image_path: str, mask_path: str, params: Params) -> list[int]:
     )
 
     # Ridge detection
+    filtered = segment.filter(filtered_image, ridge_threshold=params.ridge_threshold)
+    layer_locations = segment.layer_locations(filtered, height=params.ridge_height)
+
     # Count layers
+    return [len(layers) for layers in layer_locations]
