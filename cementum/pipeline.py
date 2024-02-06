@@ -4,10 +4,11 @@ Putting things together
 """
 from dataclasses import dataclass
 
+import numpy as np
 import matplotlib.pyplot as plt
 from skimage.filters import gaussian
 
-from . import straighten, fit_cementum, filter
+from . import straighten, fit_cementum, filter, segment
 
 
 @dataclass
@@ -26,7 +27,7 @@ class Params:
     domain_length: int
 
     # Contrast adjustment
-    filter_angle: float = 0.0
+    filter_angle: float
     filter_sigma: float
     blur_sigma: float
 
@@ -46,7 +47,7 @@ def count_layers(image_path: str, mask_path: str, params: Params) -> list[int]:
 
     # Straighten the image
     curved_mesh = straighten.mask_mesh(raw_mask, params.n_y, params.n_x)
-    straight_mesh = straighten.straighten_mesh(raw_mask, params.n_y, params.n_x)
+    straight_mesh = straighten.straight_mesh(raw_mask, params.n_y, params.n_x)
     straight_image = straighten.apply_transformation(
         raw_image, curved_mesh, straight_mesh, order=params.straighten_order
     )
@@ -57,7 +58,9 @@ def count_layers(image_path: str, mask_path: str, params: Params) -> list[int]:
 
     # Crop out cementum
     col_intensity = np.mean(straight_image, axis=0)
-    dentin = fit_cementum.find_boundary(col_intensity, params.domain_length)
+    dentin = fit_cementum.find_boundary(
+        col_intensity, domain_length=params.domain_length
+    )
     background = fit_cementum.find_background(col_intensity)
     cropped_image = straight_image[:, background:dentin]
 
@@ -70,7 +73,7 @@ def count_layers(image_path: str, mask_path: str, params: Params) -> list[int]:
     )
 
     # Ridge detection
-    filtered = segment.filter(filtered_image, ridge_threshold=params.ridge_threshold)
+    filtered = segment.filter(blurred_image, ridge_threshold=params.ridge_threshold)
     layer_locations = segment.layer_locations(filtered, height=params.ridge_height)
 
     # Count layers
