@@ -198,6 +198,19 @@ def fit_line_with_bump(
     return params, chi2, x_vals
 
 
+def _domain_slice(intensity: np.ndarray, offset: int, n_pixels: int) -> slice:
+    """
+    Find a slice that represents the domain of interest
+    Also checks for out-of-bounds, since this can be an issue
+
+    """
+    start, end = (len(intensity) - (offset + n_pixels)), (len(intensity) - offset)
+    assert start >= 0, f"Slice goes out of bounds, {start=}"
+    assert end <= len(intensity), f"Slice goes out of bounds, {end=}"
+
+    return slice(start, end)
+
+
 def fit_line_restricted_domain(
     offset: int,
     intensity: np.ndarray,
@@ -207,7 +220,8 @@ def fit_line_restricted_domain(
     """
     Fit a line to n_pixels of an image, offset from the right edge by offset_pixels
 
-    :param n_pixels: number of pixels to fit
+    :param offset: offset from the right edge
+    :param n_pixels: domain length (i.e. number of pixels to fit)
     :param intensity: intensity profile
 
     :return: fit params: (gradient, intercept) of the line
@@ -215,8 +229,7 @@ def fit_line_restricted_domain(
     return: x-values of the fit
 
     """
-    # The domain to use for the fit
-    keep = slice(-(n_pixels + offset), -offset if offset else None)
+    keep = _domain_slice(intensity, offset, n_pixels)
 
     # Create an array of x-values
     x_vals = np.arange(len(intensity))[keep]
@@ -251,8 +264,7 @@ def fit_line_with_bump_restricted_domain(
     return: x-values of the fit
 
     """
-    # The domain to use for the fit
-    keep = slice(-(n_pixels + offset), -offset if offset else None)
+    keep = _domain_slice(intensity, offset, n_pixels)
 
     # Create an array of x-values
     x_vals = np.arange(len(intensity))[keep]
@@ -313,7 +325,7 @@ def find_boundary(
     intensity: np.ndarray,
     *,
     domain_length: int,
-    tolerance: float = 5.0,
+    tolerance: float = 2.0,
     rel_height: float = 0.95,
     step_size: int = 3,
     return_more: bool = False,
@@ -332,7 +344,8 @@ def find_boundary(
 
     """
     # Define an array of points to use as the starting x value in the sliding window
-    fit_starts = np.arange(0, len(intensity) - 2 * domain_length, step_size)[::-1]
+    fit_starts = np.arange(len(intensity) - domain_length, 0, -step_size)
+    print(fit_starts[0], len(intensity), domain_length)
 
     # Define arrays for storing the chi2s
     line_chi2s = np.zeros(len(fit_starts), dtype=np.float64)
