@@ -316,7 +316,7 @@ def find_boundary(
     tolerance: float = 5.0,
     rel_height: float = 0.95,
     step_size: int = 3,
-    return_delta_chi2: bool = False,
+    return_more: bool = False,
 ) -> int:
     """
     Given an array of average pixel intensities, find the location of the cementum-dentin boundary
@@ -325,6 +325,8 @@ def find_boundary(
     :param domain_length: number of pixels in the fit domain
     :param tolerance: prominence below which it isnt considered a peak
     :param rel_height: relative height of the peak
+    :param step_size: step size for the sliding window
+    :param return_more: if True, return more stuff
 
     :returns: approximate pixel value of the cementum-dentin boundary
 
@@ -360,8 +362,8 @@ def find_boundary(
         fit_starts, delta_chi2, tolerance=tolerance, rel_height=rel_height
     )
 
-    if return_delta_chi2:
-        return peak_loc, delta_chi2
+    if return_more:
+        return peak_loc, fit_starts, delta_chi2
     return peak_loc
 
 
