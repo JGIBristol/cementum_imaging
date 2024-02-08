@@ -2,6 +2,7 @@
 Classical segementation of the cementum layers
 
 """
+
 import warnings
 
 import numpy as np
@@ -315,6 +316,7 @@ def find_boundary(
     tolerance: float = 5.0,
     rel_height: float = 0.95,
     step_size: int = 3,
+    return_delta_chi2: bool = False,
 ) -> int:
     """
     Given an array of average pixel intensities, find the location of the cementum-dentin boundary
@@ -331,8 +333,8 @@ def find_boundary(
     fit_starts = np.arange(0, len(intensity) - 2 * domain_length, step_size)[::-1]
 
     # Define arrays for storing the chi2s
-    line_chi2s = np.zeros_like(fit_starts)
-    bump_chi2s = np.zeros_like(fit_starts)
+    line_chi2s = np.zeros(len(fit_starts), dtype=np.float64)
+    bump_chi2s = np.zeros(len(fit_starts), dtype=np.float64)
 
     # Perform the fits
     for i, start in enumerate(fit_starts):
@@ -354,9 +356,13 @@ def find_boundary(
     delta_chi2 = line_chi2s - bump_chi2s
 
     # Find the location of the deltachi2 peak
-    return find_cementum(
+    peak_loc = find_cementum(
         fit_starts, delta_chi2, tolerance=tolerance, rel_height=rel_height
     )
+
+    if return_delta_chi2:
+        return peak_loc, delta_chi2
+    return peak_loc
 
 
 def find_background(intensity: np.ndarray):
