@@ -204,7 +204,7 @@ def _domain_slice(intensity: np.ndarray, offset: int, n_pixels: int) -> slice:
     Also checks for out-of-bounds, since this can be an issue
 
     """
-    start, end = (len(intensity) - (offset + n_pixels)), (len(intensity) - offset)
+    start, end = (len(intensity) - offset), (len(intensity) - offset + n_pixels)
     assert start >= 0, f"Slice goes out of bounds, {start=}"
     assert end <= len(intensity), f"Slice goes out of bounds, {end=}"
 
@@ -220,7 +220,7 @@ def fit_line_restricted_domain(
     """
     Fit a line to n_pixels of an image, offset from the right edge by offset_pixels
 
-    :param offset: offset from the right edge
+    :param offset: offset of the start of the fit region from the right edge
     :param n_pixels: domain length (i.e. number of pixels to fit)
     :param intensity: intensity profile
 
@@ -229,6 +229,8 @@ def fit_line_restricted_domain(
     return: x-values of the fit
 
     """
+    assert offset <= len(intensity), "Offset is out of bounds"
+
     keep = _domain_slice(intensity, offset, n_pixels)
 
     # Create an array of x-values
@@ -345,7 +347,6 @@ def find_boundary(
     """
     # Define an array of points to use as the starting x value in the sliding window
     fit_starts = np.arange(len(intensity) - domain_length, 0, -step_size)
-    print(fit_starts[0], len(intensity), domain_length)
 
     # Define arrays for storing the chi2s
     line_chi2s = np.zeros(len(fit_starts), dtype=np.float64)
