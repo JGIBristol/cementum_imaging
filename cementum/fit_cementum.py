@@ -320,7 +320,7 @@ def find_cementum(
     # Find the peak intersection points
     _, _, intersection, _ = peak_widths(delta_chi2, peak_indices, rel_height=rel_height)
 
-    return left_boundaries[int(np.round(intersection[-1]))]
+    return left_boundaries[int(np.round(intersection[0]))]
 
 
 def find_boundary(
