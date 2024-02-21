@@ -2,6 +2,7 @@
 Functions and helpers for straightening the images
 
 """
+
 import warnings
 
 import numpy as np
@@ -9,12 +10,48 @@ import cv2
 import shapely
 from scipy.spatial import distance
 from scipy.interpolate import interp1d
+from scipy.ndimage import label as scipy_label
 from PIL import ImageFilter, Image
 from skimage.morphology import skeletonize
 from sklearn.decomposition import PCA
 from skimage.transform import warp, PiecewiseAffineTransform
 
 from . import util
+
+
+class MultipleEdgesError(Exception):
+    pass
+
+
+class Not3RegionsError(MultipleEdgesError):
+    pass
+
+
+class NotContiguousError(MultipleEdgesError):
+    pass
+
+
+def check_mask(mask: np.ndarray) -> None:
+    """
+    Check whether a mask is valid
+
+    It should have three unique regions (background, cementum, dentin) that are all contiguous
+
+    :param mask: mask labelling background, cementum, dentin
+
+    """
+    n_unique = len(np.unique(mask.flat))
+
+    # Check that we have exactly three values in our mask
+    if n_unique != 3:
+        raise Not3RegionsError("Mask should have exactly three unique values")
+
+    # Check that the three regions are all contiguous
+    labelled_mask, _ = scipy_label(mask)
+    counts = np.bincount(labelled_mask.flat)
+    for i, count in enumerate(counts, start=1):
+        if count != 1:
+            raise NotContiguousError(f"Region {i} is not contiguous")
 
 
 def find_edges(image: np.ndarray) -> np.ndarray:
@@ -24,8 +61,10 @@ def find_edges(image: np.ndarray) -> np.ndarray:
     :param image: image to find edges in
 
     :returns: image with edges indicated
+    :raises: all sorts of stuff
 
     """
+    check_mask(image)
     edges = np.asarray(Image.fromarray(image).filter(ImageFilter.FIND_EDGES)).copy()
 
     # If the edge is on the outside of the image, remove it
@@ -55,9 +94,10 @@ def _identify_edges(edges: np.ndarray) -> np.ndarray:
 
         # Check that there's only two edges:
         unique_diffs = np.unique(np.diff(x_at_y))
-        assert (
-            len(unique_diffs) == 1 or len(unique_diffs) == 2 and 1 in unique_diffs
-        ), f"There should only be two edges: found {len(x_at_y)} at {y=}: {x_at_y} {np.diff(x_at_y)}"
+        if not (len(unique_diffs) == 1 or len(unique_diffs) == 2 and 1 in unique_diffs):
+            raise MultipleEdgesError(
+                f"There should only be two edges: found {len(x_at_y)} at {y=}: {x_at_y} {np.diff(x_at_y)}"
+            )
 
         first_edge_x.append(np.min(x_at_y))
         last_edge_x.append(np.max(x_at_y))
