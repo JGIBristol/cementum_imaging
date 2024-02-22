@@ -71,3 +71,43 @@ def test_noncontiguous():
     )
     with pytest.raises(correct_mask.NotContiguousError):
         correct_mask.check_mask(mask)
+
+
+def test_fill_right_bkg():
+    """
+    Mainline case
+
+    """
+    mask = np.array(
+        [
+            [1, 2, 3, 1],
+            [1, 2, 3, 1],
+            [1, 2, 3, 1],
+        ]
+    )
+
+    expected = np.array(
+        [
+            [1, 2, 3, 3],
+            [1, 2, 3, 3],
+            [1, 2, 3, 3],
+        ]
+    )
+
+    assert np.all(correct_mask.fill_right_bkg(mask) == expected)
+
+
+def test_fill_right_bkg_noop():
+    """
+    Check that the function returns the same thing if there is no background on the right
+
+    """
+    mask = np.array(
+        [
+            [1, 2, 3, 3],
+            [1, 2, 3, 3],
+            [1, 2, 3, 3],
+        ]
+    )
+
+    assert np.all(correct_mask.fill_right_bkg(mask) == mask)

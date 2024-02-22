@@ -101,8 +101,25 @@ def bkg_on_right(mask: np.ndarray) -> bool:
     return 1 in mask[:, -1]
 
 
-def fill_right_bkg():
+def fill_right_bkg(mask: np.ndarray) -> np.ndarray:
     """
     Fill background (1) pixels that are in a region on the right edge of the image with dentin (3)
 
     """
+    # Label connected background components
+    labeled_bkg, _ = scipy_label(mask == 1)
+
+    # Find the highest pixel x-value in the actual background region
+    max_bkg = np.max(np.where(labeled_bkg == 1)[1])
+
+    # Find which pixels are to the right of this
+    right_of_bkg = np.indices(mask.shape)[1] > max_bkg
+
+    # Find which pixels are in a contiguous region that touches the right edge
+    right_regions = np.unique(labeled_bkg[:, -1])
+
+    # Fill these pixels with dentin (3)
+    copy = mask.copy()
+    copy[right_of_bkg & (mask == 1) & np.isin(labeled_bkg, right_regions)] = 3
+
+    return copy
