@@ -10,48 +10,12 @@ import cv2
 import shapely
 from scipy.spatial import distance
 from scipy.interpolate import interp1d
-from scipy.ndimage import label as scipy_label
 from PIL import ImageFilter, Image
 from skimage.morphology import skeletonize
 from sklearn.decomposition import PCA
 from skimage.transform import warp, PiecewiseAffineTransform
 
 from . import util
-
-
-class MultipleEdgesError(Exception):
-    pass
-
-
-class Not3RegionsError(MultipleEdgesError):
-    pass
-
-
-class NotContiguousError(MultipleEdgesError):
-    pass
-
-
-def check_mask(mask: np.ndarray) -> None:
-    """
-    Check whether a mask is valid
-
-    It should have three unique regions (background, cementum, dentin) that are all contiguous
-
-    :param mask: mask labelling background, cementum, dentin
-
-    """
-    n_unique = len(np.unique(mask.flat))
-
-    # Check that we have exactly three values in our mask
-    if n_unique != 3:
-        raise Not3RegionsError("Mask should have exactly three unique values")
-
-    # Check that the three regions are all contiguous
-    labelled_mask, _ = scipy_label(mask)
-    counts = np.bincount(labelled_mask.flat)
-    for i, count in enumerate(counts, start=1):
-        if count != 1:
-            raise NotContiguousError(f"Region {i} is not contiguous")
 
 
 def find_edges(image: np.ndarray) -> np.ndarray:

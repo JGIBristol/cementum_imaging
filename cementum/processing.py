@@ -8,10 +8,8 @@ import warnings
 from PIL import Image
 import numpy as np
 from keras.utils import to_categorical
-from scipy.ndimage import binary_dilation
 
 from . import util
-from . import straighten
 
 
 def resize(image: Image, size: tuple[int, int]) -> np.ndarray:
@@ -148,25 +146,3 @@ def imgs2array(imgs: np.ndarray) -> np.ndarray:
     # This is required because the model expects images to have shape (batch_size, height, width, n_channels)
     # n_channels = 1 here, becuase the images are greyscale
     return _add_axis(imgs)
-
-
-def dilate_mask(mask: np.ndarray, *, kernel_size: int = 5) -> np.ndarray:
-    """
-    Dilate a mask to ensure that the regions are contiguous.
-
-    :param mask: The mask to dilate
-    :param kernel: The kernel to use for dilation. Defaults to 5x5
-
-    """
-    kernel = np.ones((kernel_size, kernel_size), np.uint8)
-
-    # Find non-background regions
-    cementum_dilated = binary_dilation(mask == 2, structure=kernel)
-    dentin_dilated = binary_dilation(mask == 3, structure=kernel)
-
-    # Dilate the regions + replace the original ones
-    retval = mask.copy()
-    retval = np.where(cementum_dilated, 2, retval)
-    retval = np.where(dentin_dilated, 3, retval)
-
-    return retval

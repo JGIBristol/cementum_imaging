@@ -16,6 +16,7 @@ dependencies:
   - nbdime
   - black
   - more-itertools
+  - pytest
   - tqdm
   - ruptures
   - pip:

@@ -3,11 +3,72 @@ Validation + correction for the cementum mask
 
 """
 
+import numpy as np
+from skimage.morphology import binary_dilation
+from scipy.ndimage import label as scipy_label
+
+
+class InvalidMaskError(Exception):
+    """
+    Base class for mask validation errors
+
+    """
+
+    pass
+
+
+class Not3RegionsError(InvalidMaskError):
+    """
+    More than 3 unique values in the mask
+
+    """
+
+    def __init__(self, n_regions: int):
+        super().__init__(
+            f"Mask should have exactly three unique values, not {n_regions}"
+        )
+
+
+class NotContiguousError(InvalidMaskError):
+    """
+    Some regions in the mask are not contiguous
+
+    """
+
+    def __init__(self, message="All regions in the mask should be contiguous"):
+        super().__init__(message)
+
+
 def n_contiguous_regions(mask: np.ndarray) -> int:
     """
     Count the number of contiguous regions in a mask
 
     """
+    unique_values = np.unique(mask)
+    total_regions = 0
+    for value in unique_values:
+        _, num_labels = scipy_label(mask == value)
+        total_regions += num_labels
+    return total_regions
+
+
+def check_mask(mask: np.ndarray) -> None:
+    """
+    Check whether a mask is valid
+
+    It should have three unique regions (background, cementum, dentin) that are all contiguous
+
+    :param mask: mask labelling background, cementum, dentin
+
+    """
+    # Check that we have exactly three values in our mask
+    n_unique = len(np.unique(mask.flat))
+    if n_unique != 3:
+        raise Not3RegionsError(n_unique)
+
+    # Check that the three regions are all contiguous
+    if n_contiguous_regions(mask) != 3:
+        raise NotContiguousError
 
 
 def dilate_mask(mask: np.ndarray, *, kernel_size: int = 5) -> np.ndarray:
@@ -37,6 +98,7 @@ def bkg_on_right(mask: np.ndarray) -> bool:
     Check if there are any background (1) pixels in the rightmost column of a mask
 
     """
+    return 1 in mask[:, -1]
 
 
 def fill_right_bkg():
