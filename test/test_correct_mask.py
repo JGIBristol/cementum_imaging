@@ -110,7 +110,7 @@ def test_fill_right_bkg_noop():
         ]
     )
 
-    assert np.all(correct_mask.fill_right_bkg(mask) == mask)
+    assert np.all(correct_mask.correct_mask(mask) == mask)
 
 
 def test_correct_mask_no_op():
@@ -118,6 +118,15 @@ def test_correct_mask_no_op():
     Check that a valid mask doesn't change
 
     """
+    mask = np.array(
+        [
+            [1, 2, 3, 3],
+            [1, 2, 3, 3],
+            [1, 2, 3, 3],
+        ]
+    )
+
+    assert np.all(correct_mask.fill_right_bkg(mask) == mask)
 
 
 def test_mask_dilation():
@@ -125,6 +134,29 @@ def test_mask_dilation():
     Check that a mask with a small background region between the cementum and dentin is dilated correctly
 
     """
+    widths = [100, 50, 250]
+    height = sum(widths)
+    mask = np.array(
+        [
+            [
+                *[1] * widths[0],
+                *[2] * widths[1],
+                *[3] * widths[2],
+            ]
+            for _ in range(height)
+        ]
+    )
+
+    # Add a thin region between cementum and dentin
+    mask[:, widths[0] + widths[1]] = 1
+
+    # Ensure that the right error gets raised for the mask as-is
+    with pytest.raises(correct_mask.NotContiguousError):
+        correct_mask.check_mask(mask)
+
+    # Correct it
+    corrected = correct_mask.correct_mask(mask)
+    correct_mask.check_mask(corrected)
 
 
 def test_mask_right_bkg():
@@ -132,6 +164,29 @@ def test_mask_right_bkg():
     Check that a mask with a background region on the right is correctly replaced with dentin
 
     """
+    widths = [100, 50, 250]
+    height = sum(widths)
+    mask = np.array(
+        [
+            [
+                *[1] * widths[0],
+                *[2] * widths[1],
+                *[3] * widths[2],
+            ]
+            for _ in range(height)
+        ]
+    )
+
+    # Add a thin region  on the right
+    mask[:, -1] = 1
+
+    # Ensure that the right error gets raised for the mask as-is
+    with pytest.raises(correct_mask.NotContiguousError):
+        correct_mask.check_mask(mask)
+
+    # Correct it
+    corrected = correct_mask.correct_mask(mask)
+    correct_mask.check_mask(corrected)
 
 
 def test_dilated_and_right():

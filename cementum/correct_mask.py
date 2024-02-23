@@ -132,7 +132,7 @@ def correct_mask(mask: np.ndarray) -> np.ndarray:
     Validate + correct the mask
 
     """
-    return mask
+    return
     try:
         check_mask(mask)
     except InvalidMaskError:
