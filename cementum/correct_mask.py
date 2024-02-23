@@ -6,8 +6,7 @@ It should  be three contiguous regions (background, cementum, dentin) - sometime
 """
 
 import numpy as np
-from skimage.morphology import binary_dilation
-from scipy.ndimage import label as scipy_label
+from scipy.ndimage import label as scipy_label, binary_dilation
 
 
 class InvalidMaskError(Exception):
@@ -127,23 +126,22 @@ def fill_right_bkg(mask: np.ndarray) -> np.ndarray:
     return copy
 
 
-def correct_mask(mask: np.ndarray) -> np.ndarray:
+def correct_mask(mask: np.ndarray, *, kernel_size: int = 5) -> np.ndarray:
     """
     Validate + correct the mask
 
     """
-    return
     try:
         check_mask(mask)
+
     except InvalidMaskError:
-        copy = mask.copy()
         # Binary dilation
+        mask = dilate_mask(mask, kernel_size=kernel_size)
+
         # Fill any region on the right
         if bkg_on_right(mask):
-            copy = fill_right_bkg(copy)
-        
-        return copy
-    
+            mask = fill_right_bkg(mask)
+
     check_mask(mask)
 
-    return dilate_mask(mask)
+    return mask
