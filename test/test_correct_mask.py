@@ -111,3 +111,38 @@ def test_fill_right_bkg_noop():
     )
 
     assert np.all(correct_mask.fill_right_bkg(mask) == mask)
+
+
+def test_correct_mask_no_op():
+    """
+    Check that a valid mask doesn't change
+
+    """
+
+
+def test_mask_dilation():
+    """
+    Check that a mask with a small background region between the cementum and dentin is dilated correctly
+
+    """
+
+
+def test_mask_right_bkg():
+    """
+    Check that a mask with a background region on the right is correctly replaced with dentin
+
+    """
+
+
+def test_dilated_and_right():
+    """
+    Check that a mask both a background region on the right and a small region between cementum and dentin is correctly filled
+
+    """
+
+
+def test_four_regions():
+    """
+    If the mask somehow has four regions, check that the right error is raised
+
+    """

@@ -1,6 +1,8 @@
 """
 Validation + correction for the cementum mask
 
+It should  be three contiguous regions (background, cementum, dentin) - sometimes this isn't the case
+
 """
 
 import numpy as np
@@ -123,3 +125,25 @@ def fill_right_bkg(mask: np.ndarray) -> np.ndarray:
     copy[right_of_bkg & (mask == 1) & np.isin(labeled_bkg, right_regions)] = 3
 
     return copy
+
+
+def correct_mask(mask: np.ndarray) -> np.ndarray:
+    """
+    Validate + correct the mask
+
+    """
+    return mask
+    try:
+        check_mask(mask)
+    except InvalidMaskError:
+        copy = mask.copy()
+        # Binary dilation
+        # Fill any region on the right
+        if bkg_on_right(mask):
+            copy = fill_right_bkg(copy)
+        
+        return copy
+    
+    check_mask(mask)
+
+    return dilate_mask(mask)
