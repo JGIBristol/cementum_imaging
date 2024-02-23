@@ -194,6 +194,32 @@ def test_dilated_and_right():
     Check that a mask both a background region on the right and a small region between cementum and dentin is correctly filled
 
     """
+    widths = [100, 50, 250]
+    height = sum(widths)
+    mask = np.array(
+        [
+            [
+                *[1] * widths[0],
+                *[2] * widths[1],
+                *[3] * widths[2],
+            ]
+            for _ in range(height)
+        ]
+    )
+
+    # Add a thin region  on the right
+    mask[:, -1] = 1
+
+    # Add a thin region between cementum and dentin
+    mask[:, widths[0] + widths[1]] = 1
+
+    # Ensure that the right error gets raised for the mask as-is
+    with pytest.raises(correct_mask.NotContiguousError):
+        correct_mask.check_mask(mask)
+
+    # Correct it
+    corrected = correct_mask.correct_mask(mask)
+    correct_mask.check_mask(corrected)
 
 
 def test_four_regions():
@@ -201,3 +227,12 @@ def test_four_regions():
     If the mask somehow has four regions, check that the right error is raised
 
     """
+    mask = np.array(
+        [
+            [1, 2, 3, 4],
+            [1, 2, 3, 4],
+            [1, 2, 3, 4],
+        ]
+    )
+    with pytest.raises(correct_mask.Not3RegionsError):
+        correct_mask.correct_mask(mask)
