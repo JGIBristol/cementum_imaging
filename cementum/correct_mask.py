@@ -5,6 +5,8 @@ It should  be three contiguous regions (background, cementum, dentin) - sometime
 
 """
 
+import logging
+
 import numpy as np
 from scipy.ndimage import label as scipy_label, binary_dilation
 
@@ -126,13 +128,20 @@ def fill_right_bkg(mask: np.ndarray) -> np.ndarray:
     return copy
 
 
-def correct_mask(mask: np.ndarray, *, kernel_size: int = 5) -> np.ndarray:
+def correct_mask(
+    mask: np.ndarray, *, kernel_size: int = 5, verbose: bool = False
+) -> np.ndarray:
     """
     Validate + correct the mask
+
+    :param mask: The mask to validate and possibly correct
 
     """
     try:
         check_mask(mask)
+
+        if verbose:
+            logging.info("Mask is valid")
 
     except InvalidMaskError:
         # Binary dilation
@@ -142,6 +151,10 @@ def correct_mask(mask: np.ndarray, *, kernel_size: int = 5) -> np.ndarray:
         if bkg_on_right(mask):
             mask = fill_right_bkg(mask)
 
-    check_mask(mask)
+    try:
+        check_mask(mask)
+    except InvalidMaskError as e:
+        logging.fatal(f"Mask is still invalid after correction: {e}")
+        raise e
 
     return mask
