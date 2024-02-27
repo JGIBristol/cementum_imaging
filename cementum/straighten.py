@@ -15,7 +15,7 @@ from skimage.morphology import skeletonize
 from sklearn.decomposition import PCA
 from skimage.transform import warp, PiecewiseAffineTransform
 
-from . import util
+from . import util, correct_mask
 
 
 def find_edges(image: np.ndarray) -> np.ndarray:
@@ -28,7 +28,7 @@ def find_edges(image: np.ndarray) -> np.ndarray:
     :raises: all sorts of stuff
 
     """
-    check_mask(image)
+    correct_mask.check_mask(image)
     edges = np.asarray(Image.fromarray(image).filter(ImageFilter.FIND_EDGES)).copy()
 
     # If the edge is on the outside of the image, remove it

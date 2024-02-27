@@ -38,7 +38,8 @@ class NotContiguousError(InvalidMaskError):
 
     """
 
-    def __init__(self, message="All regions in the mask should be contiguous"):
+    def __init__(self):
+        message = "All regions in the mask should be contiguous"
         super().__init__(message)
 
 
@@ -144,17 +145,20 @@ def correct_mask(
             logging.info("Mask is valid")
 
     except InvalidMaskError:
-        # Binary dilation
-        mask = dilate_mask(mask, kernel_size=kernel_size)
+        if verbose:
+            logging.info("Mask is invalid: correcting")
 
         # Fill any region on the right
         if bkg_on_right(mask):
             mask = fill_right_bkg(mask)
 
+        # Binary dilation
+        mask = dilate_mask(mask, kernel_size=kernel_size)
+
     try:
         check_mask(mask)
     except InvalidMaskError as e:
-        logging.fatal(f"Mask is still invalid after correction: {e}")
+        logging.error(f"Mask is still invalid after correction: {e}")
         raise e
 
     return mask
