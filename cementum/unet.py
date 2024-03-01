@@ -2,6 +2,9 @@
 Convolutional neural network
 
 """
+
+from typing import Union
+
 import tensorflow as tf
 from keras.layers import (
     Input,
@@ -118,7 +121,7 @@ def conv_block(
     *,
     n_filters: int,
     kernel_size: tuple[int, int],
-    dropout: float = 0.1,
+    dropout: float,
 ) -> tf.Tensor:
     """
     A bulding block for the U-Net model.
@@ -155,11 +158,26 @@ def conv_block(
     return Conv2D(n_filters, kernel_size, **conv_kw)(conv)
 
 
-def my_unet(n_classes=4, IMG_HEIGHT=256, IMG_WIDTH=256, IMG_CHANNELS=1):
+def my_unet(
+    n_classes=4,
+    IMG_HEIGHT=256,
+    IMG_WIDTH=256,
+    IMG_CHANNELS=1,
+    *,
+    dropout: Union[float, list[float]] = 0.1,
+):
     """
     Inputs must be normalised
 
+    :param dropout: either the dropout rate for all layers, or for each layer
+
     """
+    n_layers = 9
+    if isinstance(dropout, float):
+        dropout = [dropout] * n_layers
+    else:
+        assert len(dropout) == n_layers
+
     # Build the model
     inputs = Input((IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS))
     # inputs = Lambda(lambda x: x / 255)(inputs)   #No need for this if we normalize our inputs beforehand
@@ -167,38 +185,38 @@ def my_unet(n_classes=4, IMG_HEIGHT=256, IMG_WIDTH=256, IMG_CHANNELS=1):
     pooling_size = (2, 2)
 
     # Contraction path
-    c1 = conv_block(inputs, n_filters=16, kernel_size=(3, 3))
+    c1 = conv_block(inputs, n_filters=16, kernel_size=(3, 3), dropout=dropout[0])
     p1 = MaxPooling2D(pooling_size)(c1)
 
-    c2 = conv_block(p1, n_filters=32, kernel_size=(3, 3))
+    c2 = conv_block(p1, n_filters=32, kernel_size=(3, 3), dropout=dropout[1])
     p2 = MaxPooling2D(pooling_size)(c2)
 
-    c3 = conv_block(p2, n_filters=64, kernel_size=(3, 3), dropout=0.2)
+    c3 = conv_block(p2, n_filters=64, kernel_size=(3, 3), dropout=dropout[2])
     p3 = MaxPooling2D(pooling_size)(c3)
 
-    c4 = conv_block(p3, n_filters=128, kernel_size=(3, 3), dropout=0.2)
+    c4 = conv_block(p3, n_filters=128, kernel_size=(3, 3), dropout=dropout[3])
     p4 = MaxPooling2D(pooling_size)(c4)
 
     # No max pooling for the last layer
-    c5 = conv_block(p4, n_filters=256, kernel_size=(3, 3), dropout=0.3)
+    c5 = conv_block(p4, n_filters=256, kernel_size=(3, 3), dropout=dropout[4])
 
     # Expansive path
     expansive_kw = {"kernel_size": (2, 2), "strides": (2, 2), "padding": "same"}
     u6 = Conv2DTranspose(128, **expansive_kw)(c5)
     u6 = concatenate([u6, c4])
-    c6 = conv_block(u6, n_filters=128, kernel_size=(3, 3), dropout=0.2)
+    c6 = conv_block(u6, n_filters=128, kernel_size=(3, 3), dropout=dropout[5])
 
     u7 = Conv2DTranspose(64, **expansive_kw)(c6)
     u7 = concatenate([u7, c3])
-    c7 = conv_block(u7, n_filters=64, kernel_size=(3, 3), dropout=0.2)
+    c7 = conv_block(u7, n_filters=64, kernel_size=(3, 3), dropout=dropout[6])
 
     u8 = Conv2DTranspose(32, **expansive_kw)(c7)
     u8 = concatenate([u8, c2])
-    c8 = conv_block(u8, n_filters=32, kernel_size=(3, 3), dropout=0.1)
+    c8 = conv_block(u8, n_filters=32, kernel_size=(3, 3), dropout=dropout[7])
 
     u9 = Conv2DTranspose(16, **expansive_kw)(c8)
     u9 = concatenate([u9, c1])
-    c9 = conv_block(u9, n_filters=32, kernel_size=(3, 3), dropout=0.1)
+    c9 = conv_block(u9, n_filters=32, kernel_size=(3, 3), dropout=dropout[8])
 
     outputs = Conv2D(n_classes, (1, 1), activation="softmax")(c9)
 
