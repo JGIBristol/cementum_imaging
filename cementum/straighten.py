@@ -59,7 +59,7 @@ def _identify_edges(edges: np.ndarray) -> np.ndarray:
         # Check that there's only two edges:
         unique_diffs = np.unique(np.diff(x_at_y))
         if not (len(unique_diffs) == 1 or len(unique_diffs) == 2 and 1 in unique_diffs):
-            raise MultipleEdgesError(
+            raise correct_mask.InvalidMaskError(
                 f"There should only be two edges: found {len(x_at_y)} at {y=}: {x_at_y} {np.diff(x_at_y)}"
             )
 
